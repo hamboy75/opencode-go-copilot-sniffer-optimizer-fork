@@ -1,8 +1,9 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const GIT_OUTPUT_LINE_LIMIT = 500;
+const GIT_LOG_FORMAT = "--format=%H%n%h%n%s%n%an%n%ad";
 
 export interface GitCommit {
     hash: string;
@@ -14,7 +15,7 @@ export interface GitCommit {
 
 async function checkGitRepo(cwd: string): Promise<boolean> {
     try {
-        await execAsync("git rev-parse --git-dir", { cwd });
+        await execFileAsync("git", ["rev-parse", "--git-dir"], { cwd });
         return true;
     } catch {
         return false;
@@ -23,7 +24,7 @@ async function checkGitRepo(cwd: string): Promise<boolean> {
 
 async function checkGitInstalled(): Promise<boolean> {
     try {
-        await execAsync("git --version");
+        await execFileAsync("git", ["--version"]);
         return true;
     } catch {
         return false;
@@ -32,7 +33,7 @@ async function checkGitInstalled(): Promise<boolean> {
 
 async function checkGitRepoHasCommits(cwd: string): Promise<boolean> {
     try {
-        await execAsync("git rev-parse HEAD", { cwd });
+        await execFileAsync("git", ["rev-parse", "HEAD"], { cwd });
         return true;
     } catch {
         return false;
@@ -57,19 +58,28 @@ export async function searchCommits(query: string, cwd: string): Promise<GitComm
             return [];
         }
 
-        const { stdout } = await execAsync(
-            `git log -n 10 --format="%H%n%h%n%s%n%an%n%ad" --date=short ` +
-            `--grep="${query}" --regexp-ignore-case`,
-            { cwd }
-        );
+        const { stdout } = await execFileAsync("git", [
+            "log",
+            "-n",
+            "10",
+            GIT_LOG_FORMAT,
+            "--date=short",
+            "--grep",
+            query,
+            "--regexp-ignore-case",
+        ], { cwd });
 
         let output = stdout;
         if (!output.trim() && /^[a-f0-9]+$/i.test(query)) {
-            const { stdout: hashStdout } = await execAsync(
-                `git log -n 10 --format="%H%n%h%n%s%n%an%n%ad" --date=short ` +
-                `--author-date-order ${query}`,
-                { cwd }
-            ).catch(() => ({ stdout: "" }));
+            const { stdout: hashStdout } = await execFileAsync("git", [
+                "log",
+                "-n",
+                "10",
+                GIT_LOG_FORMAT,
+                "--date=short",
+                "--author-date-order",
+                query,
+            ], { cwd }).catch(() => ({ stdout: "" }));
 
             if (!hashStdout.trim()) {
                 return [];
@@ -115,20 +125,20 @@ export async function getGitDiff(repoPath: string): Promise<string | undefined> 
         }
 
         // Get staged diff (what will be committed)
-        const { stdout } = await execAsync(
-            `git diff --cached --unified=3 -- .`,
-            { cwd: repoPath, maxBuffer: 10 * 1024 * 1024 }
-        );
+        const { stdout } = await execFileAsync("git", ["diff", "--cached", "--unified=3", "--", "."], {
+            cwd: repoPath,
+            maxBuffer: 10 * 1024 * 1024,
+        });
 
         if (stdout.trim()) {
             return limitDiffLines(stdout.trim(), GIT_OUTPUT_LINE_LIMIT);
         }
 
         // Fall back to unstaged diff
-        const { stdout: unstagedStdout } = await execAsync(
-            `git diff --unified=3 -- .`,
-            { cwd: repoPath, maxBuffer: 10 * 1024 * 1024 }
-        );
+        const { stdout: unstagedStdout } = await execFileAsync("git", ["diff", "--unified=3", "--", "."], {
+            cwd: repoPath,
+            maxBuffer: 10 * 1024 * 1024,
+        });
 
         if (unstagedStdout.trim()) {
             return limitDiffLines(unstagedStdout.trim(), GIT_OUTPUT_LINE_LIMIT);
