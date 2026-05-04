@@ -47,7 +47,7 @@
 
 | 系列 | 模型 ID | 视觉 | 推理强度选择器 | API 格式 |
 |------|---------|------|----------------|----------|
-| GLM | `glm-5.1`, `glm-5` | ❌ | `禁用思考` / `思考` | OpenAI |
+| GLM | `glm-5.1`, `glm-5` | ❌ | `思考`（不支持思考切换） | OpenAI |
 | Kimi | `kimi-k2.5`, `kimi-k2.6` | ✅ | `禁用思考` / `思考` | OpenAI |
 | DeepSeek | `deepseek-v4-pro`, `deepseek-v4-flash` | ❌ | `禁用思考` / `高` / `最大` | OpenAI |
 | MiMo | `mimo-v2-pro`, `mimo-v2-omni`, `mimo-v2.5-pro`, `mimo-v2.5` | mimo-v2-omni ✅ | `禁用思考` / `思考` | OpenAI |

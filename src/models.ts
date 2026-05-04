@@ -39,8 +39,9 @@ const DEFAULT_MAX_TOKENS = 4096;
  */
 const BUILT_IN_MODELS: BuiltInModelDef[] = [
     // ── GLM series ── Zhipu GLM 官方文档: 200K context, 128K max output ──
-    { baseId: "glm-5.1", displayName: "GLM-5.1", vision: false, thinkingMode: "switchable", contextLength: 200000, maxTokens: 131072 },
-    { baseId: "glm-5", displayName: "GLM-5", vision: false, thinkingMode: "switchable", contextLength: 200000, maxTokens: 131072 },
+    // Note: GLM 系列不支持推理/思考功能，因此 thinkingMode 设为 "always" 以隐藏思考切换选项
+    { baseId: "glm-5.1", displayName: "GLM-5.1", vision: false, thinkingMode: "always", contextLength: 200000, maxTokens: 131072 },
+    { baseId: "glm-5", displayName: "GLM-5", vision: false, thinkingMode: "always", contextLength: 200000, maxTokens: 131072 },
 
     // ── Kimi series ── Moonshot AI, 官方文档: 256K context (262144 tokens) ──
     // { baseId: "kimi-k2.5", displayName: "Kimi K2.5", vision: true, thinkingMode: "switchable", contextLength: 262144, maxTokens: 16384 },
