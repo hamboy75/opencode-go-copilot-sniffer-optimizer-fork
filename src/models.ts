@@ -1,5 +1,6 @@
 import type { LanguageModelChatInformation } from "vscode";
 import type { OpenCodeGoModelItem } from "./types";
+import { l10n } from "./localize";
 
 /**
  * Built-in model definition for OpenCode Go.
@@ -69,10 +70,10 @@ const BUILT_IN_MODELS: BuiltInModelDef[] = [
 
 /**
  * Get the built-in model list as LanguageModelChatInformation[].
- * For "switchable" thinking models, registers two entries:
- *   - "Instruct" suffix (thinking disabled)
- *   - "Thinking" suffix (thinking enabled)
- * For "always" thinking models, registers one entry.
+ * Each model registers one entry with a configurationSchema for reasoning effort selection.
+ * - switchable models: include "禁用思考" option so user can turn off thinking
+ * - always models: no "禁用思考" option, thinking always on
+ * All labels and descriptions use l10n() for i18n.
  */
 export function getBuiltInModelInfos(): LanguageModelChatInformation[] {
     const infos: LanguageModelChatInformation[] = [];
@@ -82,117 +83,87 @@ export function getBuiltInModelInfos(): LanguageModelChatInformation[] {
         const maxOutput = def.maxTokens ?? DEFAULT_MAX_TOKENS;
         const maxInput = contextLen;
 
-        if (def.thinkingMode === "switchable") {
-            // Register TWO variants: Instruct (no thinking) and Thinking (thinking enabled)
+        const info: LanguageModelChatInformation = {
+            id: def.baseId,
+            name: def.displayName,
+            detail: `OpenCode Go`,
+            tooltip: `OpenCode Go`,
+            family: EXTENSION_LABEL,
+            version: "1.0.0",
+            maxInputTokens: maxInput,
+            maxOutputTokens: maxOutput,
+            capabilities: {
+                toolCalling: true,
+                imageInput: def.vision,
+            },
+        };
 
-            // Instruct variant
-            infos.push({
-                id: `${def.baseId}::Instruct`,
-                name: `${def.displayName} Instruct`,
-                detail: `OpenCode Go`,
-                tooltip: `OpenCode Go`,
-                family: EXTENSION_LABEL,
-                version: "1.0.0",
-                maxInputTokens: maxInput,
-                maxOutputTokens: maxOutput,
-                capabilities: {
-                    toolCalling: true,
-                    imageInput: def.vision,
-                },
-            } satisfies LanguageModelChatInformation);
-
-            // Thinking variant
-            const thinkingInfo: LanguageModelChatInformation = {
-                id: `${def.baseId}::Thinking`,
-                name: `${def.displayName} Thinking`,
-                detail: `OpenCode Go`,
-                tooltip: `OpenCode Go`,
-                family: EXTENSION_LABEL,
-                version: "1.0.0",
-                maxInputTokens: maxInput,
-                maxOutputTokens: maxOutput,
-                capabilities: {
-                    toolCalling: true,
-                    imageInput: def.vision,
-                },
-            };
-
-            // Attach configurationSchema for models with supported reasoning efforts
-            if (def.supportedReasoningEfforts && def.supportedReasoningEfforts.length > 0) {
-                infos.push({
-                    ...thinkingInfo,
-                    configurationSchema: {
-                        properties: {
-                            reasoningEffort: {
-                                type: 'string',
-                                title: 'Thinking Effort',
-                                enum: def.supportedReasoningEfforts,
-                                enumItemLabels: def.supportedReasoningEfforts.map((e: string) => e.charAt(0).toUpperCase() + e.slice(1)),
-                                enumDescriptions: def.supportedReasoningEfforts.map((e: string) => {
-                                    switch (e) {
-                                        case 'low': return 'Faster responses with less reasoning';
-                                        case 'medium': return 'Balanced reasoning and speed';
-                                        case 'high': return 'Greater reasoning depth but slower';
-                                        case 'max': return 'Maximum reasoning depth but slowest';
-                                        default: return e;
-                                    }
-                                }),
-                                default: def.defaultReasoningEffort ?? def.supportedReasoningEfforts[def.supportedReasoningEfforts.length - 1],
-                                group: 'navigation',
-                            },
-                        },
-                    },
-                } satisfies LanguageModelChatInformation);
+        // Build enum values based on thinking mode
+        const hasEfforts = def.supportedReasoningEfforts && def.supportedReasoningEfforts.length > 0;
+        let enumValues: string[];
+        if (hasEfforts) {
+            if (def.thinkingMode === "switchable") {
+                enumValues = ["disabled", ...def.supportedReasoningEfforts!];
             } else {
-                infos.push(thinkingInfo);
+                enumValues = [...def.supportedReasoningEfforts!];
             }
         } else {
-            // "always" thinking: single entry
-            const alwaysInfo: LanguageModelChatInformation = {
-                id: def.baseId,
-                name: def.displayName,
-                detail: `OpenCode Go`,
-                tooltip: `OpenCode Go`,
-                family: EXTENSION_LABEL,
-                version: "1.0.0",
-                maxInputTokens: maxInput,
-                maxOutputTokens: maxOutput,
-                capabilities: {
-                    toolCalling: true,
-                    imageInput: def.vision,
-                },
-            };
-
-            // Attach configurationSchema for models with supported reasoning efforts
-            if (def.supportedReasoningEfforts && def.supportedReasoningEfforts.length > 0) {
-                infos.push({
-                    ...alwaysInfo,
-                    configurationSchema: {
-                        properties: {
-                            reasoningEffort: {
-                                type: 'string',
-                                title: 'Thinking Effort',
-                                enum: def.supportedReasoningEfforts,
-                                enumItemLabels: def.supportedReasoningEfforts.map((e: string) => e.charAt(0).toUpperCase() + e.slice(1)),
-                                enumDescriptions: def.supportedReasoningEfforts.map((e: string) => {
-                                    switch (e) {
-                                        case 'low': return 'Faster responses with less reasoning';
-                                        case 'medium': return 'Balanced reasoning and speed';
-                                        case 'high': return 'Greater reasoning depth but slower';
-                                        case 'max': return 'Maximum reasoning depth but slowest';
-                                        default: return e;
-                                    }
-                                }),
-                                default: def.defaultReasoningEffort ?? def.supportedReasoningEfforts[def.supportedReasoningEfforts.length - 1],
-                                group: 'navigation',
-                            },
-                        },
-                    },
-                } satisfies LanguageModelChatInformation);
+            if (def.thinkingMode === "switchable") {
+                enumValues = ["disabled", "enabled"];
             } else {
-                infos.push(alwaysInfo);
+                enumValues = ["enabled"];
             }
         }
+
+        // Map effort values to localized labels and descriptions
+        const getLabel = (e: string): string => {
+            switch (e) {
+                case 'disabled': return l10n("reasoning.disabled");
+                case 'enabled': return l10n("reasoning.enabled");
+                case 'low': return l10n("reasoning.low");
+                case 'medium': return l10n("reasoning.medium");
+                case 'high': return l10n("reasoning.high");
+                case 'max': return l10n("reasoning.max");
+                default: return e.charAt(0).toUpperCase() + e.slice(1);
+            }
+        };
+        const getDesc = (e: string): string => {
+            switch (e) {
+                case 'disabled': return l10n("reasoning.disabled.desc");
+                case 'enabled': return l10n("reasoning.enabled.desc");
+                case 'low': return l10n("reasoning.low.desc");
+                case 'medium': return l10n("reasoning.medium.desc");
+                case 'high': return l10n("reasoning.high.desc");
+                case 'max': return l10n("reasoning.max.desc");
+                default: return e;
+            }
+        };
+
+        const enumItemLabels = enumValues.map(getLabel);
+        const enumDescriptions = enumValues.map(getDesc);
+
+        // Determine default: for switchable with efforts, use defaultReasoningEffort or last item;
+        // for others, use the last enum value (enabled/highest effort)
+        const defaultEffort = (hasEfforts && def.defaultReasoningEffort)
+            ? def.defaultReasoningEffort
+            : enumValues[enumValues.length - 1];
+
+        infos.push({
+            ...info,
+            configurationSchema: {
+                properties: {
+                    reasoningEffort: {
+                        type: 'string',
+                        title: l10n("reasoning.effort.title"),
+                        enum: enumValues,
+                        enumItemLabels: enumItemLabels,
+                        enumDescriptions: enumDescriptions,
+                        default: defaultEffort,
+                        group: 'navigation',
+                    },
+                },
+            },
+        } satisfies LanguageModelChatInformation);
     }
 
     return infos;
@@ -202,24 +173,17 @@ export function getBuiltInModelInfos(): LanguageModelChatInformation[] {
  * Get the total count of built-in model entries (after expanding switchable models).
  */
 export function getBuiltInModelCount(): number {
-    let count = 0;
-    for (const def of BUILT_IN_MODELS) {
-        count += def.thinkingMode === "switchable" ? 2 : 1;
-    }
-    return count;
+    return BUILT_IN_MODELS.length;
 }
 
 /**
- * Find a built-in model definition by a parsed model ID (baseId::configId).
- * Returns the model properties that should be applied to the request.
- * Falls back to finding by baseId alone.
+ * Find a built-in model definition by model ID.
+ * Returns the model properties including thinking mode, API mode, and extra parameters.
+ * Thinking state (enable_thinking) is initially set to true and will be adjusted
+ * by provider.ts based on the user's reasoning effort selection.
  */
 export function getBuiltInModelConfig(modelId: string): OpenCodeGoModelItem | undefined {
-    const parts = modelId.split("::");
-    const baseId = parts[0];
-    const configId = parts[1];
-
-    const def = BUILT_IN_MODELS.find((m) => m.baseId === baseId);
+    const def = BUILT_IN_MODELS.find((m) => m.baseId === modelId);
     if (!def) {
         return undefined;
     }
@@ -232,34 +196,19 @@ export function getBuiltInModelConfig(modelId: string): OpenCodeGoModelItem | un
         context_length: def.contextLength ?? DEFAULT_CONTEXT_LENGTH,
         max_completion_tokens: def.maxTokens ?? DEFAULT_MAX_TOKENS,
         apiMode: def.apiMode ?? "openai",
+        enable_thinking: true,
+        include_reasoning_in_request: true,
+        thinkingMode: def.thinkingMode,
     };
+
+    // Set default reasoning effort if configured
+    if (def.defaultReasoningEffort) {
+        model.reasoning_effort = def.defaultReasoningEffort;
+    }
 
     // Pass through extra body parameters
     if (def.extra) {
         model.extra = { ...def.extra };
-    }
-
-    // Apply thinking-related settings based on variant
-    if (def.thinkingMode === "switchable") {
-        if (configId === "Thinking") {
-            model.enable_thinking = true;
-            if (def.defaultReasoningEffort) {
-                model.reasoning_effort = def.defaultReasoningEffort;
-            }
-            model.include_reasoning_in_request = true;
-            model.configId = "Thinking";
-        } else {
-            // Instruct variant: no thinking
-            model.enable_thinking = false;
-            model.configId = "Instruct";
-        }
-    } else {
-        // "always" thinking: thinking forced on
-        model.enable_thinking = true;
-        if (def.defaultReasoningEffort) {
-            model.reasoning_effort = def.defaultReasoningEffort;
-        }
-        model.include_reasoning_in_request = true;
     }
 
     return model;

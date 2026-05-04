@@ -50,6 +50,8 @@ export interface OpenCodeGoModelItem {
     delay?: number;
     /** API mode (for internal use) */
     apiMode?: string;
+    /** Whether this model supports switching thinking on/off ("switchable") or always has it ("always") */
+    thinkingMode?: "switchable" | "always";
     /** Custom HTTP headers */
     headers?: Record<string, string>;
 

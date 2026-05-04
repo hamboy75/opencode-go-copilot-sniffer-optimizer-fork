@@ -115,11 +115,25 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             const config = vscode.workspace.getConfiguration();
             const um: OpenCodeGoModelItem | undefined = getBuiltInModelConfig(model.id);
 
-            // Apply user-configured reasoning effort from model picker UI
-            if (um?.enable_thinking && options.modelConfiguration?.reasoningEffort) {
+            // Apply reasoning effort from model configuration to determine thinking mode
+            // - "disabled" → turn off thinking (unless model has thinkingMode="always")
+            // - "enabled" → turn on thinking with default effort
+            // - "high"/"max" → turn on thinking with specified effort
+            if (um && options.modelConfiguration?.reasoningEffort) {
                 const effort = options.modelConfiguration.reasoningEffort;
                 if (typeof effort === 'string') {
-                    um.reasoning_effort = effort;
+                    if (effort === 'disabled') {
+                        if (um.thinkingMode !== "always") {
+                            um.enable_thinking = false;
+                            um.include_reasoning_in_request = false;
+                        }
+                    } else {
+                        um.enable_thinking = true;
+                        um.include_reasoning_in_request = true;
+                        if (effort !== 'enabled') {
+                            um.reasoning_effort = effort;
+                        }
+                    }
                 }
             }
 
@@ -136,7 +150,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
 
             // Prepare model configuration
             const modelConfig = {
-                includeReasoningInRequest: um?.include_reasoning_in_request ?? model.id.includes("::Thinking"),
+                includeReasoningInRequest: um?.include_reasoning_in_request ?? true,
             };
 
             // Update Token Usage

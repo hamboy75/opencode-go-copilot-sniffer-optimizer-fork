@@ -28,7 +28,7 @@
 | 能力 | 说明 |
 |------|------|
 | **Chat 模型提供商** | 实现 `LanguageModelChatProvider` 接口，向 VS Code 注册为 `opencodego` 厂商 |
-| **多模型支持** | 内置 14 个模型定义，覆盖 6 大模型系列，支持 Thinking/Instruct 双变体 |
+| **多模型支持** | 内置 14 个模型定义，覆盖 6 大模型系列，统一通过推理强度选择器切换思考模式 |
 | **双 API 模式** | 同时支持 **OpenAI 兼容格式** (`/chat/completions`) 和 **Anthropic 格式** (`/v1/messages`) |
 | **流式推理** | 支持 SSE (Server-Sent Events) 流式响应，实时输出文本和工具调用 |
 | **Thinking/推理** | 支持模型的推理过程展示 ("thinking" 状态)，包括 XML think 块解析 |
@@ -44,17 +44,18 @@
 
 ### 1.3 模型清单
 
-| 系列 | 模型 ID | 视觉 | 推理模式 | API 格式 |
-|------|---------|------|----------|----------|
-| GLM | `glm-5.1`, `glm-5` | ❌ | switchable | OpenAI |
-| Kimi | `kimi-k2.5`, `kimi-k2.6` | ✅ | always | OpenAI |
-| DeepSeek | `deepseek-v4-pro`, `deepseek-v4-flash` | ❌ | switchable | OpenAI |
-| MiMo | `mimo-v2-pro`, `mimo-v2-omni`, `mimo-v2.5-pro`, `mimo-v2.5` | mimo-v2-omni ✅ | always | OpenAI |
-| MiniMax | `minimax-m2.7`, `minimax-m2.5` | ❌ | always | OpenAI (m2.7 使用 Anthropic) |
-| Qwen | `qwen3.6-plus`, `qwen3.5-plus` | ✅ | switchable | OpenAI |
+| 系列 | 模型 ID | 视觉 | 推理强度选择器 | API 格式 |
+|------|---------|------|----------------|----------|
+| GLM | `glm-5.1`, `glm-5` | ❌ | `禁用思考` / `思考` | OpenAI |
+| Kimi | `kimi-k2.5`, `kimi-k2.6` | ✅ | `禁用思考` / `思考` | OpenAI |
+| DeepSeek | `deepseek-v4-pro`, `deepseek-v4-flash` | ❌ | `禁用思考` / `高` / `最大` | OpenAI |
+| MiMo | `mimo-v2-pro`, `mimo-v2-omni`, `mimo-v2.5-pro`, `mimo-v2.5` | mimo-v2-omni ✅ | `禁用思考` / `思考` | OpenAI |
+| MiniMax | `minimax-m2.7`, `minimax-m2.5` | ❌ | `禁用思考` / `思考` | OpenAI (m2.7 使用 Anthropic) |
+| Qwen | `qwen3.6-plus`, `qwen3.5-plus` | ✅ | `禁用思考` / `思考` | OpenAI |
 
-> **switchable**: 注册两个变体 — `Instruct`（无推理）和 `Thinking`（启用推理）。  
-> **always**: 推理始终启用，只注册一个条目。
+> 所有模型在模型选择器中均显示**一个条目**，通过**推理强度选择器**（中文标签）切换思考模式。  
+> - `thinkingMode="switchable"`：用户可选择`禁用思考`或启用思考（强度可配置）  
+> - `thinkingMode="always"`：推理始终启用，选择器中不显示`禁用思考`选项（模型特性）
 
 ---
 
@@ -116,11 +117,13 @@ activate(context)
 provideLanguageModelChatResponse(model, messages, options, progress, token)
   │
   ├── 1. 解析模型 ID → getBuiltInModelConfig(model.id)
-  │       格式: "baseId::configId" → { baseId, configId }
-  │       switchable: Instruct/Thinking 变体
-  │       always: 单一条目
+  │       格式: "baseId"（无 :: 后缀）
+  │       所有模型注册为单一条目
   │
   ├── 2. 应用用户配置的 reasoningEffort
+  │       ├── "disabled" → 关闭思考（always 模型除外）
+  │       ├── "enabled" → 开启思考，使用默认推理力度
+  │       ├── "high"/"max" → 开启思考，指定推理力度
   │
   ├── 3. 确定 API 模式 (apiMode: "openai" | "anthropic")
   │
@@ -276,9 +279,9 @@ src/
 | 文件 | 行数 | 职责 |
 |------|------|------|
 | `extension.ts` | ~45 | 扩展激活/停用，注册 Provider 和命令 |
-| `provider.ts` | ~280 | 实现 `LanguageModelChatProvider`，处理聊天请求全流程 |
-| `models.ts` | ~230 | 14 个内置模型定义，模型配置查询 |
-| `types.ts` | ~80 | `OpenCodeGoModelItem`, `ModelsResponse`, `RetryConfig` 等类型 |
+| `provider.ts` | ~370 | 实现 `LanguageModelChatProvider`，处理聊天请求全流程 |
+| `models.ts` | ~205 | 14 个内置模型定义，模型配置查询 |
+| `types.ts` | ~85 | `OpenCodeGoModelItem`, `ModelsResponse`, `RetryConfig` 等类型 |
 | `commonApi.ts` | ~300 | `CommonApi<TMessage,TRequestBody>` 抽象基类 |
 | `provideModel.ts` | ~25 | 模型信息获取 |
 | `provideToken.ts` | ~100 | Token 用量计算 |
@@ -349,7 +352,7 @@ src/
 | `baseId` | `string` | API 请求中使用的模型 ID |
 | `displayName` | `string` | 用户友好的显示名称 |
 | `vision` | `boolean` | 是否支持图片输入 |
-| `thinkingMode` | `"switchable" \| "always"` | switchable=注册两个变体, always=强制推理 |
+| `thinkingMode` | `"switchable" \| "always"` | switchable=可选择思考开关, always=思考始终启用 |
 | `defaultReasoningEffort` | `string` (可选) | 默认推理力度 |
 | `supportedReasoningEfforts` | `string[]` (可选) | 支持的推理力度选项 |
 | `includeReasoningInRequest` | `boolean` (可选) | 是否在 assistant 消息中包含 reasoning_content |
@@ -362,13 +365,13 @@ src/
 14 个内置模型定义常量数组。
 
 #### `getBuiltInModelInfos(): LanguageModelChatInformation[]`
-将内置模型定义转换为 VS Code 的模型信息列表。switchable 模型展开为 Instruct 和 Thinking 两个变体，并为支持 reasoningEffort 的模型附加 `configurationSchema`。
+将内置模型定义转换为 VS Code 的模型信息列表。每个模型注册**一个条目**，并通过 `configurationSchema` 附加推理强度选择器（中文标签）。switchable 模型显示 `禁用思考/思考` 或 `禁用思考/高/最大`（可关闭推理）；always 模型不显示 `禁用思考` 选项，仅在支持推理强度时显示强度选项。
 
 #### `getBuiltInModelCount(): number`
-计算展开后的模型条目总数。
+返回内置模型定义总数（BUILT_IN_MODELS.length）。
 
 #### `getBuiltInModelConfig(modelId: string): OpenCodeGoModelItem | undefined`
-解析模型 ID (`baseId::configId`) 并返回对应的模型配置对象，包括推理模式、API 模式、extra 参数等。
+按模型 ID 查找内置模型定义，返回对应的模型配置对象（含 thinkingMode、默认推理力度、API 模式、extra 参数等）。思考模式的具体启用状态由 provider.ts 根据 reasoningEffort 配置动态决定。
 
 ---
 
@@ -381,7 +384,7 @@ src/
 |------|------|------|
 | `id` | `string` | 模型 ID |
 | `owned_by` | `string` | 提供商 |
-| `configId` | `string` (可选) | 配置 ID (Instruct/Thinking) |
+| `configId` | `string` (可选) | 配置 ID（保留兼容） |
 | `displayName` | `string` (可选) | 显示名称 |
 | `baseUrl` | `string` (可选) | 自定义 Base URL |
 | `context_length` | `number` (可选) | 上下文长度 |
@@ -401,6 +404,7 @@ src/
 | `extra` | `Record<string, unknown>` (可选) | 额外请求体参数 |
 | `family` | `string` (可选) | 模型系列 |
 | `include_reasoning_in_request` | `boolean` (可选) | 是否在请求中包含推理内容 |
+| `thinkingMode` | `"switchable" \| "always"` (可选) | 思考模式类型 |
 | `useForCommitGeneration` | `boolean` (可选) | 是否用于提交消息生成 |
 | `delay` | `number` (可选) | 模型专属请求延迟 |
 | `apiMode` | `string` (可选) | API 模式 |
