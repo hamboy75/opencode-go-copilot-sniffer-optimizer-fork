@@ -19,7 +19,7 @@ Integrate [OpenCode Go](https://opencode.ai/go) models into GitHub Copilot Chat 
 
 ### Token Usage Indicator
 
-Once installed, the status bar shows the current context usage and cumulative input/output token counts for OpenCode Go models. Models that support cache metrics via the OpenAI-compatible format (e.g., DeepSeek) also display the **cumulative cache hit count** and **cache hit rate** in the tooltip.
+Once installed, the status bar shows the current context usage and cumulative input/output token counts for OpenCode Go models. DeepSeek models and models that return cache metrics via the OpenAI-compatible format also display the **cumulative cache hit count** and **cache hit rate** in the tooltip.
 
 > Note: Whether non-DeepSeek models display cache data depends on whether the model API returns cache metrics in OpenAI-compatible format. This does not indicate whether the model supports caching — caching support depends on OpenCode Go.
 
@@ -83,7 +83,7 @@ MIT License. This project references code from [oai-compatible-copilot](https://
 
 ### Token 用量指示器
 
-安装后，使用 OpenCode Go 提供的模型时，状态栏会显示当前上下文用量与累计输入/输出 Token 量。DeepSeek 等支持通过 OpenAI 格式返回缓存用量的模型还会显示**累计缓存命中量**与**缓存命中率**。
+安装后，使用 OpenCode Go 提供的模型时，状态栏会显示当前上下文用量与累计输入/输出 Token 量。DeepSeek 和通过 OpenAI 格式返回缓存用量的模型还会显示**累计缓存命中量**与**缓存命中率**。
 
 > 提示: 非 DeepSeek 的模型是否显示缓存数据取决于模型接口是否通过 OpenAI 格式返回缓存数据，这并不代表此模型是否支持缓存。模型对于缓存的支持情况取决于 OpenCode Go。
 
