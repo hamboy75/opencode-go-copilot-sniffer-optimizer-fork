@@ -4,6 +4,7 @@ import {
     LanguageModelChatInformation,
     LanguageModelChatProvider,
     LanguageModelChatRequestMessage,
+    PrepareLanguageModelChatModelOptions,
     ProvideLanguageModelChatResponseOptions,
     LanguageModelResponsePart2,
     Progress,
@@ -63,10 +64,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
      * Get the list of available language models contributed by this provider.
      */
     async provideLanguageModelChatInformation(
-        options: { silent: boolean },
+        options: PrepareLanguageModelChatModelOptions,
         _token: CancellationToken
     ): Promise<LanguageModelChatInformation[]> {
-        return prepareLanguageModelChatInformation({ silent: options.silent ?? false }, _token, this.secrets);
+        return prepareLanguageModelChatInformation(options, _token, this.secrets);
     }
 
     /**

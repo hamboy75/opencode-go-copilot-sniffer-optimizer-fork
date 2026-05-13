@@ -91,6 +91,7 @@ export function getBuiltInModelInfos(): LanguageModelChatInformation[] {
             version: "1.0.0",
             maxInputTokens: maxInput,
             maxOutputTokens: 0,
+            isUserSelectable: true,
             capabilities: {
                 toolCalling: true,
                 imageInput: def.vision,

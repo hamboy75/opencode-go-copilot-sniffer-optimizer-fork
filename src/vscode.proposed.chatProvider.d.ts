@@ -63,6 +63,15 @@ declare module "vscode" {
 		readonly statusIcon?: ThemeIcon;
 
 		/**
+		 * When set, this model is only shown in the model picker for the specified
+		 * chat session type. Models with this property are excluded from the general
+		 * model picker and only appear when the user is in a session matching this type.
+		 *
+		 * The value must match a `type` declared in a `chatSessions` extension contribution.
+		 */
+		readonly targetChatSessionType?: string;
+
+		/**
 		 * An optional JSON schema describing the configuration options for this model.
 		 * When set, users can specify per-model configuration in their language models
 		 * configuration file. The configured values are merged into the request options
@@ -136,10 +145,6 @@ declare module "vscode" {
 	 * The list of options passed into {@linkcode LanguageModelChatProvider.provideLanguageModelChatInformation}
 	 */
 	export interface PrepareLanguageModelChatModelOptions {
-		/**
-		 * Whether the provider is being called silently (e.g., for background refresh).
-		 */
-		readonly silent: boolean;
 		/**
 		 * Configuration for the model. This is only present if the provider has declared
 		 * that it requires configuration via the `configuration` property.

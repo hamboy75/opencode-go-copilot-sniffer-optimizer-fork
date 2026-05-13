@@ -1,6 +1,5 @@
 # OpenCode Go Copilot Provider — AGENTS.md
 
-> **版本**: 0.4.2 | **最后更新**: 2026-05-05  
 > **所有更改必须通过 `npm run compile` / `npx tsc --noEmit` 编译检查无错误通过。**  
 > **每次更改后，必须同步更新本文档 (`AGENTS.md`) 以反映代码变更。**
 
@@ -335,7 +334,7 @@ src/
 创建 undici fetch 实例，设置自定义 `bodyTimeout` 防止流式响应中 TCP 空闲连接被提前关闭。回退到全局 `fetch`。
 
 #### `provideLanguageModelChatInformation(options, _token): Promise<LanguageModelChatInformation[]>`
-获取可用的语言模型列表。委托给 `prepareLanguageModelChatInformation()`。
+获取可用的语言模型列表。参数类型为 `PrepareLanguageModelChatModelOptions`，委托给 `prepareLanguageModelChatInformation()`。
 
 #### `provideTokenCount(_model, text, _token): Promise<number>`
 计算文本或消息的 Token 数量。委托给 `countMessageTokens()`。
@@ -371,7 +370,7 @@ src/
 14 个内置模型定义常量数组。
 
 #### `getBuiltInModelInfos(): LanguageModelChatInformation[]`
-将内置模型定义转换为 VS Code 的模型信息列表。每个模型注册**一个条目**，并通过 `configurationSchema` 附加推理强度选择器（中文标签）。switchable 模型显示 `禁用思考/思考` 或 `禁用思考/高/最大`（可关闭推理）；always 模型不显示 `禁用思考` 选项，仅在支持推理强度时显示强度选项。
+将内置模型定义转换为 VS Code 的模型信息列表。每个模型注册**一个条目**，带 `isUserSelectable: true` 确保在模型选择器中可见（VS Code 1.120+ 要求），并通过 `configurationSchema` 附加推理强度选择器（中文标签）。switchable 模型显示 `禁用思考/思考` 或 `禁用思考/高/最大`（可关闭推理）；always 模型不显示 `禁用思考` 选项，仅在支持推理强度时显示强度选项。
 
 #### `getBuiltInModelCount(): number`
 返回内置模型定义总数（BUILT_IN_MODELS.length）。

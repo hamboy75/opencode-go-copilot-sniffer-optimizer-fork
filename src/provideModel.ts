@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { CancellationToken, LanguageModelChatInformation } from "vscode";
+import { CancellationToken, LanguageModelChatInformation, PrepareLanguageModelChatModelOptions } from "vscode";
 
 import { logger } from "./logger";
 import { getBuiltInModelInfos } from "./models";
@@ -10,7 +10,7 @@ const EXTENSION_LABEL = "OpenCodeGo";
  * Get the list of available language models contributed by this provider.
  */
 export async function prepareLanguageModelChatInformation(
-    options: { silent: boolean },
+    options: PrepareLanguageModelChatModelOptions,
     _token: CancellationToken,
     _secrets: vscode.SecretStorage
 ): Promise<LanguageModelChatInformation[]> {
