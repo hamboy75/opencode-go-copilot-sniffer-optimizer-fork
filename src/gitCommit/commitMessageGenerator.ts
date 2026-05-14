@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
 import { getGitDiff, getRecentCommits } from "./gitUtils";
@@ -186,13 +187,35 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
 
         const prompts: string[] = [];
 
+        // Attach AGENTS.md and README.md context
+        const attachContextFiles = config.get<boolean>("opencodego.commitAttachContextFiles", true);
+        if (attachContextFiles && repoPath) {
+            const contextFiles = ["AGENTS.md", "README.md"];
+            for (const fileName of contextFiles) {
+                const filePath = path.join(repoPath, fileName);
+                try {
+                    if (fs.existsSync(filePath)) {
+                        const content = fs.readFileSync(filePath, "utf-8").trim();
+                        if (content) {
+                            const truncated = content.length > 8000
+                                ? content.substring(0, 8000) + "\n\n[Content truncated due to size]"
+                                : content;
+                            prompts.push(`[File: ${fileName}]\n${truncated}`);
+                        }
+                    }
+                } catch {
+                    // Skip files that can't be read
+                }
+            }
+        }
+
         const currentInput = inputBox.value?.trim() || "";
         if (currentInput) {
             prompts.push(DEFAULT_PROMPT.user.replace("{{USER_CURRENT_INPUT}}", currentInput));
         }
 
         const truncatedDiff =
-            gitDiff.length > 10000 ? gitDiff.substring(0, 10000) + "\n\n[Diff truncated due to size]" : gitDiff;
+            gitDiff.length > 5000 ? gitDiff.substring(0, 5000) + "\n\n[Diff truncated due to size]" : gitDiff;
         prompts.push(truncatedDiff);
         const prompt = prompts.join("\n\n");
 

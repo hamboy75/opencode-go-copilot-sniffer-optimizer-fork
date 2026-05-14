@@ -138,6 +138,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "%config.commitIncludeCommitDiff.desc%"
+				},
+				"opencodego.commitAttachContextFiles": {
+					"type": "boolean",
+					"default": true,
+					"description": "%config.commitAttachContextFiles.desc%"
 				}
 			}
 		}

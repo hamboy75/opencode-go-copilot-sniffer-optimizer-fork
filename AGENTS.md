@@ -301,7 +301,7 @@ src/
 | `openai/openaiTypes.ts` | ~60 | OpenAI 类型定义 |
 | `anthropic/anthropicApi.ts` | ~400 | Anthropic 格式 API 实现 |
 | `anthropic/anthropicTypes.ts` | ~120 | Anthropic 类型定义 |
-| `gitCommit/commitMessageGenerator.ts` | ~260 | Git 提交消息生成逻辑 |
+| `gitCommit/commitMessageGenerator.ts` | ~280 | Git 提交消息生成逻辑 |
 | `gitCommit/gitUtils.ts` | ~190 | Git 命令封装 |
 | `tokenizer/tokenizerManager.ts` | ~130 | o200k_base 分词器管理 (含 LRU 缓存) |
 | `tokenizer/imageUtils.ts` | ~130 | 图片尺寸解析 (PNG/GIF/JPEG/WebP) |
@@ -797,7 +797,7 @@ Anthropic 请求体。包含 `model`, `messages`, `max_tokens`, `system`, `strea
 确保 API Key 存在。
 
 #### `performCommitMsgGeneration(secrets, gitDiff, inputBox, repoPath?): Promise<void>`
-核心生成逻辑。构建 prompt（含自定义提示词、最近提交风格、用户输入、diff 内容），创建 API 实例，流式输出提交消息到 InputBox。支持通过配置 `opencodego.commitIncludeCommitDiff` 控制风格参考中是否包含历史提交的实际代码变更（默认关闭）。
+核心生成逻辑。构建 prompt（含自定义提示词、最近提交风格、用户输入、diff 内容），创建 API 实例，流式输出提交消息到 InputBox。支持通过配置 `opencodego.commitIncludeCommitDiff` 控制风格参考中是否包含历史提交的实际代码变更（默认关闭）。支持通过配置 `opencodego.commitAttachContextFiles`（默认开启）控制是否将仓库根目录的 `AGENTS.md` 和 `README.md` 内容附加到 prompt 中作为额外上下文。
 
 #### `abortCommitGeneration(): void`
 中止提交消息生成。

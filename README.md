@@ -40,7 +40,8 @@ Available in `settings.json`:
   "opencodego.commitMessagePrompt": "",
   "opencodego.requestTimeout": 600000,
   "opencodego.recentCommitsCount": 10,
-  "opencodego.commitIncludeCommitDiff": false
+  "opencodego.commitIncludeCommitDiff": false,
+  "opencodego.commitAttachContextFiles": true
 }
 ```
 
@@ -52,6 +53,7 @@ Available in `settings.json`:
 | `opencodego.requestTimeout` | `600000` | Maximum time (ms) for a single API request. Default is 600000 (10 minutes). Increase if long responses time out. |
 | `opencodego.recentCommitsCount` | `10` | Number of recent commits to analyze for style reference when generating commit messages. Set to 0 to disable. |
 | `opencodego.commitIncludeCommitDiff` | `false` | Include the actual code changes (diff) of recent commits in the style reference, helping the model generate messages that better match the project's commit style. |
+| `opencodego.commitAttachContextFiles` | `true` | Attach AGENTS.md and README.md from the repository root as additional context for commit message generation, helping the model better understand the project. |
 
 > All requests use `temperature: 0` for deterministic output.  
 > Models with switchable thinking (e.g., DeepSeek, Qwen) provide reasoning effort levels such as Disabled/High/Maximum.
@@ -113,7 +115,8 @@ MIT License. This project references code from [oai-compatible-copilot](https://
   "opencodego.commitMessagePrompt": "",
   "opencodego.requestTimeout": 600000,
   "opencodego.recentCommitsCount": 10,
-  "opencodego.commitIncludeCommitDiff": false
+  "opencodego.commitIncludeCommitDiff": false,
+  "opencodego.commitAttachContextFiles": true
 }
 ```
 
@@ -125,6 +128,7 @@ MIT License. This project references code from [oai-compatible-copilot](https://
 | `opencodego.requestTimeout` | `600000` | 单个 API 请求的最大等待时间（毫秒）。默认 600000（10 分钟）。生成长内容超时时可增大此值。 |
 | `opencodego.recentCommitsCount` | `10` | 生成提交消息时参考的近期提交数量，用于学习仓库提交风格。设为 0 可禁用。 |
 | `opencodego.commitIncludeCommitDiff` | `false` | 在风格参考中包含历史提交的实际代码变更（diff），帮助模型生成更符合项目提交风格的消息。 |
+| `opencodego.commitAttachContextFiles` | `true` | 将仓库根目录的 AGENTS.md 和 README.md 作为额外上下文附加到提交消息生成中，帮助模型更好地理解项目。 |
 
 > 所有请求使用 `temperature: 0` 以确保输出确定性。  
 > 支持切换思考模式的模型（如 DeepSeek、Qwen）提供`禁用思考`/`高`/`极高`等推理强度选项。
