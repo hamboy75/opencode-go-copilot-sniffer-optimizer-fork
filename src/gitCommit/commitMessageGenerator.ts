@@ -192,7 +192,7 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
         }
 
         const truncatedDiff =
-            gitDiff.length > 5000 ? gitDiff.substring(0, 5000) + "\n\n[Diff truncated due to size]" : gitDiff;
+            gitDiff.length > 10000 ? gitDiff.substring(0, 10000) + "\n\n[Diff truncated due to size]" : gitDiff;
         prompts.push(truncatedDiff);
         const prompt = prompts.join("\n\n");
 

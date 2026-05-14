@@ -125,7 +125,9 @@ export async function getGitDiff(repoPath: string): Promise<string | undefined> 
         }
 
         // Get staged diff (what will be committed)
-        const { stdout } = await execFileAsync("git", ["diff", "--cached", "--unified=3", "--", "."], {
+        // Use -U1 to minimize context lines, keeping diffs compact and avoiding
+        // inclusion of unchanged content between separate change sections
+        const { stdout } = await execFileAsync("git", ["diff", "--cached", "-U1", "--", "."], {
             cwd: repoPath,
             maxBuffer: 10 * 1024 * 1024,
         });
@@ -135,7 +137,7 @@ export async function getGitDiff(repoPath: string): Promise<string | undefined> 
         }
 
         // Fall back to unstaged diff
-        const { stdout: unstagedStdout } = await execFileAsync("git", ["diff", "--unified=3", "--", "."], {
+        const { stdout: unstagedStdout } = await execFileAsync("git", ["diff", "-U1", "--", "."], {
             cwd: repoPath,
             maxBuffer: 10 * 1024 * 1024,
         });
@@ -209,11 +211,13 @@ export async function getRecentCommits(repoPath: string, count: number, options?
 
                 if (hash) {
                     try {
+                        // Use -U1 to minimize context, keeping the diff focused
+                        // on actual changed lines rather than surrounding context
                         const { stdout: diffOut } = await execFileAsync("git", [
                             "show",
                             hash,
                             "--format=", // no commit metadata in diff
-                            "--unified=3",
+                            "-U1",
                             "--",
                             ".",
                         ], { cwd: repoPath, maxBuffer: 5 * 1024 * 1024 });

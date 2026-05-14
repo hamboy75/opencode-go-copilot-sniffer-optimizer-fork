@@ -828,13 +828,13 @@ Anthropic 请求体。包含 `model`, `messages`, `max_tokens`, `system`, `strea
 搜索 Git 提交记录（支持 hash 回退搜索）。
 
 #### `getGitDiff(repoPath): Promise<string | undefined>`
-获取 Git Diff。优先 staged diff (`git diff --cached`)，回退 unstaged diff (`git diff`)，限制最多 500 行。
+获取 Git Diff。优先 staged diff (`git diff --cached`)，回退 unstaged diff (`git diff`)，使用 `-U1` 减少上下文行数，限制最多 500 行。
 
 #### `interface GetRecentCommitsOptions`
 `{ includeDiff?: boolean; maxDiffLinesPerCommit?: number }` — 获取最近提交的选项。
 
 #### `getRecentCommits(repoPath, count, options?): Promise<string>`
-获取最近的提交标题作为风格参考。可通过 `options.includeDiff` 启用包含每次提交的实际代码变更（diff），通过 `options.maxDiffLinesPerCommit` 控制每个提交 diff 的最大行数（默认 50）。
+获取最近的提交标题作为风格参考。可通过 `options.includeDiff` 启用包含每次提交的实际代码变更（diff），通过 `options.maxDiffLinesPerCommit` 控制每个提交 diff 的最大行数（默认 50）。diff 使用 `-U1` 减少上下文行数，避免两处改动之间夹杂不必要的未变更内容。
 
 #### `limitDiffLines(diff, maxLines): string`
 限制 diff 行数，超出时添加截断标记。
