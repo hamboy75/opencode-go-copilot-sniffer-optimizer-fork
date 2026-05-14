@@ -133,6 +133,11 @@
 					"minimum": 0,
 					"maximum": 50,
 					"description": "%config.recentCommitsCount.desc%"
+				},
+				"opencodego.commitIncludeCommitDiff": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.commitIncludeCommitDiff.desc%"
 				}
 			}
 		}

@@ -12,5 +12,6 @@
 	"config.commitModel.desc": "Model ID used for commit message generation.",
 	"config.commitMessagePrompt.desc": "Custom system prompt for commit message generation.",
 	"config.requestTimeout.desc": "Maximum time (in milliseconds) for a single request. Default: 600000 (10 minutes). Increase if you encounter timeout errors with long responses.",
-	"config.recentCommitsCount.desc": "Number of recent commits to analyze for style reference when generating commit messages. Set to 0 to disable. Default: 10."
+	"config.recentCommitsCount.desc": "Number of recent commits to analyze for style reference when generating commit messages. Set to 0 to disable. Default: 10.",
+	"config.commitIncludeCommitDiff.desc": "When enabled, include the actual code changes (diff) of recent commits in the style reference, helping the model generate messages that better match the project's commit style. Default: false."
 }

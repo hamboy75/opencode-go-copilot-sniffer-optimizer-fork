@@ -151,13 +151,21 @@ export async function getGitDiff(repoPath: string): Promise<string | undefined> 
     }
 }
 
+export interface GetRecentCommitsOptions {
+    /** Whether to include the actual diff of each commit (default: false) */
+    includeDiff?: boolean;
+    /** Max diff lines per commit when includeDiff is true (default: 50) */
+    maxDiffLinesPerCommit?: number;
+}
+
 /**
  * Fetch recent commit subjects to use as style reference.
  * @param repoPath Repository path
  * @param count Number of recent commits to fetch
- * @returns Concatenated commit subjects, one per line
+ * @param options Optional settings for including commit diffs
+ * @returns Concatenated commit subjects (and diffs if enabled), one per line
  */
-export async function getRecentCommits(repoPath: string, count: number): Promise<string> {
+export async function getRecentCommits(repoPath: string, count: number, options?: GetRecentCommitsOptions): Promise<string> {
     if (count <= 0) {
         return "";
     }
@@ -173,6 +181,58 @@ export async function getRecentCommits(repoPath: string, count: number): Promise
         if (!(await checkGitRepoHasCommits(repoPath))) {
             return "";
         }
+
+        const includeDiff = options?.includeDiff ?? false;
+        const maxDiffLinesPerCommit = options?.maxDiffLinesPerCommit ?? 50;
+
+        if (includeDiff) {
+            // Fetch full commit log with hash and subject
+            const { stdout: logStdout } = await execFileAsync("git", [
+                "log",
+                `-n ${count}`,
+                "--format=%H%n%s",
+                "--no-merges",
+            ], { cwd: repoPath, maxBuffer: 1024 * 1024 });
+
+            if (!logStdout.trim()) {
+                return "";
+            }
+
+            const lines = logStdout.trim().split("\n");
+            const results: string[] = [];
+
+            for (let i = 0; i + 1 < lines.length; i += 2) {
+                const hash = lines[i].trim();
+                const subject = lines[i + 1].trim();
+
+                let entry = `Commit: ${subject}`;
+
+                if (hash) {
+                    try {
+                        const { stdout: diffOut } = await execFileAsync("git", [
+                            "show",
+                            hash,
+                            "--format=", // no commit metadata in diff
+                            "--unified=3",
+                            "--",
+                            ".",
+                        ], { cwd: repoPath, maxBuffer: 5 * 1024 * 1024 });
+
+                        if (diffOut.trim()) {
+                            entry += "\nChanges:\n" + limitDiffLines(diffOut.trim(), maxDiffLinesPerCommit);
+                        }
+                    } catch {
+                        // If git show fails for this commit, skip its diff
+                    }
+                }
+
+                results.push(entry);
+            }
+
+            return results.join("\n\n");
+        }
+
+        // Original behavior: only subjects
         const { stdout } = await execFileAsync("git", [
             "log",
             `-n ${count}`,

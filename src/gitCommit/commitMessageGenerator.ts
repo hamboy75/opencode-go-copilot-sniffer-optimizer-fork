@@ -173,10 +173,14 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
 
         // Fetch recent commits for style reference
         const recentCommitsCount = config.get<number>("opencodego.recentCommitsCount", 10);
+        const includeCommitDiff = config.get<boolean>("opencodego.commitIncludeCommitDiff", false);
         if (recentCommitsCount > 0 && repoPath) {
-            const recentCommits = await getRecentCommits(repoPath, recentCommitsCount);
+            const recentCommits = await getRecentCommits(repoPath, recentCommitsCount, { includeDiff: includeCommitDiff });
             if (recentCommits) {
-                systemPrompt += DEFAULT_PROMPT.styleReference.replace("{{RECENT_COMMITS}}", recentCommits);
+                const styleRef = includeCommitDiff
+                    ? "\n\nRecent commit messages and their changes in this repository (match their style):\n{{RECENT_COMMITS}}"
+                    : DEFAULT_PROMPT.styleReference;
+                systemPrompt += styleRef.replace("{{RECENT_COMMITS}}", recentCommits);
             }
         }
 

@@ -12,5 +12,6 @@
 	"config.commitModel.desc": "用于生成提交消息的模型 ID。",
 	"config.commitMessagePrompt.desc": "生成提交消息的自定义系统提示词。",
 	"config.requestTimeout.desc": "单个请求的最大等待时间（毫秒）。默认值: 600000（10分钟）。如果生成长内容时遇到超时错误，请增大此值。",
-	"config.recentCommitsCount.desc": "生成提交消息时参考的近期提交数量，用于学习仓库提交风格。设为 0 可禁用。默认: 10。"
+	"config.recentCommitsCount.desc": "生成提交消息时参考的近期提交数量，用于学习仓库提交风格。设为 0 可禁用。默认: 10。",
+	"config.commitIncludeCommitDiff.desc": "启用后，风格参考中包含历史提交的实际代码变更（diff），帮助模型生成更符合项目提交风格的消息。默认: 关闭。"
 }
