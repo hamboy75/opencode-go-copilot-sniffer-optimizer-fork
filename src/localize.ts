@@ -73,6 +73,7 @@ const zhCN: Record<string, string> = {
 	"Precise": "精确",
 	"Balanced": "均衡",
 	"Creative": "创意",
+	"Extra Creative": "极具创意",
 	"Set to temperature: {0} ({1})": "已设为温度 {0} ({1})",
 	"Set to temperature: {0} (custom)": "已设为温度 {0} (自定义)",
 	"Set to temp: {0}, top_p: {1} (custom)": "已设为温度 {0}, top_p {1} (自定义)",
