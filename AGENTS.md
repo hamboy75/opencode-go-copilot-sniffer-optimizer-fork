@@ -36,6 +36,7 @@
 | **状态栏** | 实时显示当前会话 token 使用量、累计用量、缓存命中率 |
 | **Git 提交消息生成** | 一键生成 Conventional Commit 格式的 Git 提交消息，支持 `auto` 语言模式自动从历史提交检测语言 |
 | **多仓库支持** | 支持多根工作区 (multi-root) 中多个 Git 仓库的提交消息生成 |
+| **模型预设** | 支持通过命令面板快速切换 temperature/top_p 预设（🎯 Precise/⚖️ Balanced/🔥 Creative），也支持手动自定义输入 |
 | **国际化** | 内置简体中文 (zh-cn) 中英文双语界面 |
 | **重试机制** | 可配置的指数退避重试策略，应对网络抖动和限流 (429) |
 | **请求延迟** | 可配置的请求间隔延迟，避免触发 API 限流 |
@@ -286,17 +287,17 @@ src/
 
 | 文件 | 行数 | 职责 |
 |------|------|------|
-| `extension.ts` | ~45 | 扩展激活/停用，注册 Provider 和命令 |
+| `extension.ts` | ~175 | 扩展激活/停用，注册 Provider 和 4 条命令 |
 | `provider.ts` | ~370 | 实现 `LanguageModelChatProvider`，处理聊天请求全流程 |
 | `models.ts` | ~205 | 14 个内置模型定义，模型配置查询 |
-| `types.ts` | ~85 | `OpenCodeGoModelItem`, `ModelsResponse`, `RetryConfig` 等类型 |
+| `types.ts` | ~95 | `OpenCodeGoModelItem`, `ModelPreset`, `ModelsResponse`, `RetryConfig` 等类型 |
 | `commonApi.ts` | ~300 | `CommonApi<TMessage,TRequestBody>` 抽象基类 |
 | `provideModel.ts` | ~25 | 模型信息获取 |
 | `provideToken.ts` | ~100 | Token 用量计算 |
 | `utils.ts` | ~220 | 工具函数 (重试、角色映射、工具转换等) |
 | `statusBar.ts` | ~140 | 状态栏创建、更新、累计计数器 |
 | `logger.ts` | ~50 | 日志输出 (LogOutputChannel) |
-| `localize.ts` | ~70 | 中英文国际化 |
+| `localize.ts` | ~85 | 中英文国际化 |
 | `versionManager.ts` | ~35 | 扩展版本信息 |
 | `openai/openaiApi.ts` | ~430 | OpenAI 格式 API 实现 (消息转换/请求构建/流式处理) |
 | `openai/openaiTypes.ts` | ~60 | OpenAI 类型定义 |
@@ -314,7 +315,7 @@ src/
 ### 4.1 `src/extension.ts`
 
 #### `activate(context: vscode.ExtensionContext): void`
-扩展激活入口。初始化日志、分词器、状态栏；注册 `LanguageModelChatProvider`；注册三条命令（设置 API Key、生成 Git 提交消息、中止生成）。
+扩展激活入口。初始化日志、分词器、状态栏；注册 `LanguageModelChatProvider`；注册四条命令（设置 API Key、生成 Git 提交消息、中止生成、设置模型预设）。
 
 #### `deactivate(): void`
 扩展停用。清理资源（日志 dispose）。
@@ -423,6 +424,9 @@ src/
 
 #### `interface ModelItem`
 `{ id, object?, created?, owned_by? }` — 单个模型条目。
+
+#### `interface ModelPreset`
+`{ id, label, temperature, top_p }` — 模型预设配置，用于快速切换温度和 top_p。
 
 #### `interface RetryConfig`
 `{ enabled, maxAttempts, intervalMs, backoffFactor, maxIntervalMs, statusCodes }` — 重试配置。
