@@ -24,7 +24,7 @@
 	"bugs": {
 		"url": "https://github.com/OnesoftQwQ/opencode-go-copilot/issues"
 	},
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"engines": {
 		"vscode": "^1.104.0"
 	},
@@ -188,26 +188,58 @@
 					"description": "%config.top_p.desc%"
 				},
 				"opencodego.enableZenFreeModels": {
-				"type": "boolean",
-				"default": false,
-				"description": "%config.enableZenFreeModels.desc%"
-			},
-			"opencodego.modelPresets": {
+					"type": "boolean",
+					"default": false,
+					"description": "%config.enableZenFreeModels.desc%"
+				},
+				"opencodego.modelPresets": {
 					"type": "array",
 					"default": [
-						{ "id": "precise", "label": "Precise", "temperature": 0.0 },
-						{ "id": "balanced", "label": "Balanced", "temperature": 1.0 },
-						{ "id": "creative", "label": "Creative", "temperature": 1.2 },
-						{ "id": "extra-creative", "label": "Extra Creative", "temperature": 1.7 }
+						{
+							"id": "precise",
+							"label": "Precise",
+							"temperature": 0
+						},
+						{
+							"id": "balanced",
+							"label": "Balanced",
+							"temperature": 1
+						},
+						{
+							"id": "creative",
+							"label": "Creative",
+							"temperature": 1.2
+						},
+						{
+							"id": "extra-creative",
+							"label": "Extra Creative",
+							"temperature": 1.7
+						}
 					],
 					"items": {
 						"type": "object",
-						"required": ["id", "label", "temperature"],
+						"required": [
+							"id",
+							"label",
+							"temperature"
+						],
 						"properties": {
-							"id": { "type": "string", "description": "%config.modelPreset.id.desc%" },
-							"label": { "type": "string", "description": "%config.modelPreset.label.desc%" },
-							"temperature": { "type": "number", "description": "%config.modelPreset.temperature.desc%" },
-							"top_p": { "type": "number", "description": "%config.modelPreset.top_p.desc%" }
+							"id": {
+								"type": "string",
+								"description": "%config.modelPreset.id.desc%"
+							},
+							"label": {
+								"type": "string",
+								"description": "%config.modelPreset.label.desc%"
+							},
+							"temperature": {
+								"type": "number",
+								"description": "%config.modelPreset.temperature.desc%"
+							},
+							"top_p": {
+								"type": "number",
+								"description": "%config.modelPreset.top_p.desc%"
+							}
 						}
 					},
 					"description": "%config.modelPresets.desc%"
