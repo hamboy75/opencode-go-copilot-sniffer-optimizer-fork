@@ -256,7 +256,7 @@
 				},
 				"opencodego.visionProxyThinking": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "%config.visionProxyThinking.desc%"
 				}
 			}
