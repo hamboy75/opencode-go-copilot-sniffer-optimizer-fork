@@ -40,7 +40,7 @@ import { l10n } from "./localize";
  * part and displays it in the native UI element, just like GitHub Copilot's own
  * models do.
  *
- * This is always active. The separate third-party status bar indicator can be
+ * This is always active. The separate Advanced Token indicator can be
  * controlled via the "opencodego.enableThirdPartyTokenIndicator" setting.
  */
 function reportNativeUsage(
@@ -217,10 +217,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 vision: um?.vision ?? false,
             };
 
-            // Read third-party status bar indicator setting
+            // Read Advanced Token indicator setting
             const enableThirdPartyIndicator = config.get<boolean>("opencodego.enableThirdPartyTokenIndicator", true);
 
-            // Update third-party status bar (if enabled)
+            // Update Advanced Token indicator (if enabled)
             if (enableThirdPartyIndicator) {
                 updateContextStatusBar(messages, options.tools, model, this.statusBarItem, modelConfig);
             }
@@ -288,7 +288,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 anthropicApi.onUsage = (usage) => {
                     // Always report to native Copilot indicator (use original progress, not trackingProgress wrapper)
                     reportNativeUsage(usage, progress);
-                    // Conditionally update third-party status bar
+                    // Conditionally update Advanced Token indicator
                     if (enableThirdPartyIndicator) {
                         recordUsage(usage);
                         updateCumulativeTooltip(this.statusBarItem);
@@ -358,7 +358,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 openaiApi.onUsage = (usage) => {
                     // Always report to native Copilot indicator (use original progress, not trackingProgress wrapper)
                     reportNativeUsage(usage, progress);
-                    // Conditionally update third-party status bar
+                    // Conditionally update Advanced Token indicator
                     if (enableThirdPartyIndicator) {
                         recordUsage(usage);
                         updateCumulativeTooltip(this.statusBarItem);
