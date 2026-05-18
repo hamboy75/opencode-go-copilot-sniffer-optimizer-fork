@@ -36,6 +36,8 @@
 | **图片代理 (Tool-based)** | 为不支持视觉的模型注入 `describe_image` 工具，模型可自主选择调用视觉模型（默认 Qwen3.6-Plus）描述图片，支持两轮 API 请求完成"调用工具→获取描述→继续回答"的完整流程。视觉模型 ID、描述提示词和思考模式均可通过设置配置 |
 | **Token 计数** | 使用 `o200k_base` tiktoken 分词器精确统计 token 用量 |
 | **状态栏** | 实时显示当前会话 token 使用量、累计用量、缓存命中率 |
+| **原生 Token 指示器** | 始终启用，向 Copilot Chat 原生 Token 指示器报告 token 用量。通过发送 MIME 类型为 `usage` 的 `LanguageModelDataPart` 实现，无需自建状态栏 |
+| **第三方状态栏指示器** | 可通过 `opencodego.enableThirdPartyTokenIndicator` 配置（默认开启）控制 VS Code 状态栏中的自定义 Token 计数器。关闭后仅显示原生指示器 |
 | **Git 提交消息生成** | 一键生成 Conventional Commit 格式的 Git 提交消息，支持 `auto` 语言模式自动从历史提交检测语言 |
 | **多仓库支持** | 支持多根工作区 (multi-root) 中多个 Git 仓库的提交消息生成 |
 | **模型预设** | 支持通过命令面板快速切换 temperature/top_p 预设（🎯 Precise/⚖️ Balanced/🔥 Creative），也支持手动自定义输入 |
@@ -95,6 +97,8 @@
 │  │   1. 获取模型配置 (getBuiltInModelConfig)                     │  │
 │  │   2. 获取 API Key (SecretStorage)                             │  │
 │  │   3. 计算 Token 用量 (provideToken → statusBar)               │  │
+│  │   3b. 可选: 向 Copilot Chat 原生 Token 指示器报告用量          │  │
+│  │       (LanguageModelDataPart, MIME type "usage")               │  │
 │  │   4. 应用请求延迟 (delay)                                     │  │
 │  │   5. 构建请求 → API 路由选择                                  │  │
 │  │      ├─ apiMode="openai"    → OpenaiApi                       │  │

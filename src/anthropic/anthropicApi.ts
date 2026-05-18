@@ -33,6 +33,9 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 	/** Whether images were stored during convertMessages for describe_image tool. */
 	private _hasStoredImages = false;
 
+	/** Accumulated input tokens from Anthropic message_start for usage reporting. */
+	private _anthropicInputTokens = 0;
+
 	/**
 	 * Convert VS Code chat messages to Anthropic message format.
 	 * @param messages The VS Code chat messages to convert.
@@ -378,12 +381,24 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 		}
 
 		if (chunk.type === "message_start" && chunk.message) {
-			// Extract message metadata (id, model, etc.)
+			// Extract message metadata (id, model, etc.) and input token count
+			const msg = chunk.message as Record<string, unknown>;
+			const usage = msg.usage as { input_tokens?: number } | undefined;
+			if (usage?.input_tokens) {
+				this._anthropicInputTokens = usage.input_tokens;
+			}
 			return;
 		}
 
 		if (chunk.type === "message_delta" && chunk.delta) {
 			// Extract stop_reason and usage information
+			const chunkUsage = chunk.usage as { output_tokens?: number } | undefined;
+			if (chunkUsage?.output_tokens && this._anthropicInputTokens > 0) {
+				this._onUsage?.({
+					promptTokens: this._anthropicInputTokens,
+					completionTokens: chunkUsage.output_tokens,
+				});
+			}
 			return;
 		}
 

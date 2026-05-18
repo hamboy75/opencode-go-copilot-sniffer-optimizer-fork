@@ -44,6 +44,7 @@
 	"config.visionProxyModel.desc": "Vision model ID used by the describe_image tool to describe attached images when the selected model does not support vision.",
 	"config.visionProxyPrompt.desc": "Custom prompt sent to the vision model when describing an image via the describe_image tool.",
 	"config.visionProxyThinking.desc": "Enable thinking/reasoning when describing images via the vision proxy model.",
+	"config.enableThirdPartyTokenIndicator.desc": "Enable the third-party status bar token usage indicator. The native Copilot token indicator always shows. When this is enabled, the extension also shows a custom token counter in the VS Code status bar. Default: true.",
 
 	"command.setModelPreset": "Set Model Temperature Preset"
 }

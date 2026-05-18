@@ -44,6 +44,7 @@
 	"config.visionProxyModel.desc": "用于 describe_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于描述附带的图片。",
 	"config.visionProxyPrompt.desc": "发送给视觉模型的图片描述提示词。可通过 describe_image 工具调用。",
 	"config.visionProxyThinking.desc": "在视觉代理模型描述图片时启用思考/推理功能。",
+	"config.enableThirdPartyTokenIndicator.desc": "启用第三方状态栏 Token 用量指示器。Copilot 原生 Token 指示器始终保持开启。开启后，扩展还会在 VS Code 状态栏中显示自定义 Token 计数器。默认: 开启。",
 
 	"command.setModelPreset": "设置模型温度预设"
 }
