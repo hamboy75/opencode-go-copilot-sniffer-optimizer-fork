@@ -53,11 +53,11 @@ const BUILT_IN_MODELS: BuiltInModelDef[] = [
     { baseId: "deepseek-v4-pro", displayName: "DeepSeek V4 Pro", vision: false, thinkingMode: "switchable", defaultReasoningEffort: "max", supportedReasoningEfforts: ["high", "max"], contextLength: 1000000, maxTokens: 393216 },
     { baseId: "deepseek-v4-flash", displayName: "DeepSeek V4 Flash", vision: false, thinkingMode: "switchable", defaultReasoningEffort: "max", supportedReasoningEfforts: ["high", "max"], contextLength: 1000000, maxTokens: 393216 },
 
-    // ── MiMo series ── 小米 MiMo 官方模型卡: 256K context (262144) ──
+    // ── MiMo series ── 小米 MiMo 官方模型卡: V2 256K (262144), V2.5 1M (1000000) ──
     { baseId: "mimo-v2-pro", displayName: "MiMo-V2-Pro", vision: false, thinkingMode: "always", contextLength: 262144, maxTokens: 32768 },
     { baseId: "mimo-v2-omni", displayName: "MiMo-V2-Omni", vision: true, thinkingMode: "always", contextLength: 262144, maxTokens: 32768 },
-    { baseId: "mimo-v2.5-pro", displayName: "MiMo-V2.5-Pro", vision: false, thinkingMode: "always", contextLength: 262144, maxTokens: 32768 },
-    { baseId: "mimo-v2.5", displayName: "MiMo-V2.5", vision: false, thinkingMode: "always", contextLength: 262144, maxTokens: 32768 },
+    { baseId: "mimo-v2.5-pro", displayName: "MiMo-V2.5-Pro", vision: false, thinkingMode: "always", contextLength: 1000000, maxTokens: 32768 },
+    { baseId: "mimo-v2.5", displayName: "MiMo-V2.5", vision: false, thinkingMode: "always", contextLength: 1000000, maxTokens: 32768 },
 
     // ── MiniMax series ── 官方文档: 204800 context (204.8K) ──
     // Note: minimax-m2.7 uses Anthropic API format (messages endpoint)

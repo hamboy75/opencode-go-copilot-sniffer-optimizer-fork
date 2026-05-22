@@ -648,9 +648,9 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 ...storedMessages,
                 {
                     role: "assistant" as const,
-                    content: null as string | null,
                     // DeepSeek requires reasoning_content when thinking mode is enabled,
-                    // even on tool call assistant messages
+                    // even on tool call assistant messages.
+                    // Note: content must be omitted, not null — DeepSeek rejects null content.
                     reasoning_content: "Calling describe_image tool to get a description of the user's attached image.",
                     tool_calls: [
                         {
