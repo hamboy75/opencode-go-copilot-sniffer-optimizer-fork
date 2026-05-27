@@ -9,6 +9,7 @@ extension.vsix
 
 # VS Code
 .vscode/settings.json
+.vscode/
 
 # OS files
 .DS_Store

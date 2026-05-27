@@ -64,9 +64,11 @@ const BUILT_IN_MODELS: BuiltInModelDef[] = [
     { baseId: "minimax-m2.7", displayName: "MiniMax M2.7", vision: false, thinkingMode: "always", apiMode: "anthropic", extra: { reasoning_split: true }, contextLength: 204800, maxTokens: 32768 },
     { baseId: "minimax-m2.5", displayName: "MiniMax M2.5", vision: false, thinkingMode: "always", contextLength: 204800, maxTokens: 32768 },
 
-    // ── Qwen series ── 阿里云百炼: Qwen3.6-Plus 1M context, Qwen3.5-Plus 同代同规格 ──
-    { baseId: "qwen3.6-plus", displayName: "Qwen3.6 Plus", vision: true, thinkingMode: "switchable", contextLength: 1000000, maxTokens: 32768 },
-    { baseId: "qwen3.5-plus", displayName: "Qwen3.5 Plus", vision: true, thinkingMode: "switchable", contextLength: 1000000, maxTokens: 32768 },
+    // ── Qwen series ── 阿里云百炼: Qwen3.7-Max 1M context, Qwen3.6-Plus 1M context, Qwen3.5-Plus 同代同规格 ──
+    // Note: Qwen 系列使用 Anthropic API 格式 (messages endpoint)
+    { baseId: "qwen3.7-max", displayName: "Qwen3.7 Max", vision: false, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 65536 },
+    { baseId: "qwen3.6-plus", displayName: "Qwen3.6 Plus", vision: true, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 32768 },
+    { baseId: "qwen3.5-plus", displayName: "Qwen3.5 Plus", vision: true, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 32768 },
 ];
 
 /**
