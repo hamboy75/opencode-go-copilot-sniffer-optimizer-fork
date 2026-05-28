@@ -8,8 +8,10 @@ export const ZEN_FREE_MODEL_IDS: readonly string[] = [
     "big-pickle",
     "deepseek-v4-flash-free",
     "minimax-m2.5-free",
+    "mimo-v2.5-free",
     "ring-2.6-1t-free",
     "nemotron-3-super-free",
+    "qwen3.6-plus-free",
 ];
 
 /**
@@ -46,6 +48,13 @@ const ZEN_FREE_MODEL_METADATA: Record<
         maxTokens: 32768,
         thinkingMode: "switchable",
     },
+    "mimo-v2.5-free": {
+        displayName: "Zen/MiMo V2.5 Free",
+        contextLength: 1000000,
+        vision: true,
+        maxTokens: 32768,
+        thinkingMode: "switchable",
+    },
     "ring-2.6-1t-free": {
         displayName: "Zen/Ring 2.6 1T Free",
         contextLength: 128000,
@@ -55,9 +64,16 @@ const ZEN_FREE_MODEL_METADATA: Record<
     },
     "nemotron-3-super-free": {
         displayName: "Zen/Nemotron 3 Super Free",
-        contextLength: 128000,
+        contextLength: 1000000,
         vision: false,
         maxTokens: 4096,
+        thinkingMode: "switchable",
+    },
+    "qwen3.6-plus-free": {
+        displayName: "Zen/Qwen3.6 Plus Free",
+        contextLength: 1000000,
+        vision: true,
+        maxTokens: 65536,
         thinkingMode: "switchable",
     },
 };
