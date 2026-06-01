@@ -42,13 +42,6 @@ const ZEN_FREE_MODEL_METADATA: Record<
         supportedReasoningEfforts: ["high", "max"],
         defaultReasoningEffort: "max",
     },
-    "minimax-m2.5-free": {
-        displayName: "Zen/MiniMax M2.5 Free",
-        contextLength: 204800,
-        vision: false,
-        maxTokens: 32768,
-        thinkingMode: "switchable",
-    },
     "minimax-m3-free": {
         displayName: "Zen/MiniMax M3 Free",
         contextLength: 1000000,
@@ -64,27 +57,13 @@ const ZEN_FREE_MODEL_METADATA: Record<
         maxTokens: 32768,
         thinkingMode: "switchable",
     },
-    "ring-2.6-1t-free": {
-        displayName: "Zen/Ring 2.6 1T Free",
-        contextLength: 128000,
-        vision: false,
-        maxTokens: 4096,
-        thinkingMode: "switchable",
-    },
     "nemotron-3-super-free": {
         displayName: "Zen/Nemotron 3 Super Free",
         contextLength: 1000000,
         vision: false,
         maxTokens: 4096,
         thinkingMode: "switchable",
-    },
-    "qwen3.6-plus-free": {
-        displayName: "Zen/Qwen3.6 Plus Free",
-        contextLength: 1000000,
-        vision: true,
-        maxTokens: 65536,
-        thinkingMode: "switchable",
-    },
+    }
 };
 
 const EXTENSION_LABEL_ZEN = "OpenCode Zen";
