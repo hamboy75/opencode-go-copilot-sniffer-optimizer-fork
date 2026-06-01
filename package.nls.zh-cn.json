@@ -43,9 +43,9 @@
 	"config.modelPreset.temperature.desc": "温度值 (0.0 - 2.0)。",
 	"config.modelPreset.top_p.desc": "top_p 值 (0.0 - 1.0)。",
 
-	"config.visionProxyModel.desc": "用于 describe_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于描述附带的图片。",
-	"config.visionProxyPrompt.desc": "发送给视觉模型的图片描述提示词。可通过 describe_image 工具调用。",
-	"config.visionProxyThinking.desc": "在视觉代理模型描述图片时启用思考/推理功能。",
+	"config.visionProxyModel.desc": "用于 ask_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于回答图片相关问题。",
+	"config.visionProxyPrompt.desc": "发送给视觉模型的自定义提示词。如果设置，将覆盖模型传递给 ask_image 工具的查询。如果为空，则使用模型的提问作为视觉提示词。",
+	"config.visionProxyThinking.desc": "在视觉代理模型回答图片查询时启用思考/推理功能。",
 	"config.enableThirdPartyTokenIndicator.desc": "启用高级 Token 指示器。Copilot 原生 Token 指示器始终保持开启。开启后，扩展还会在 VS Code 状态栏中显示高级Token计数器。默认: 开启。",
 
 	"command.setModelPreset": "设置模型温度预设",

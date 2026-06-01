@@ -30,7 +30,7 @@ import {
 import { CommonApi, StreamUsage } from "../commonApi";
 import { logger } from "../logger";
 import type { StoredImage } from "../vision/types";
-import { DESCRIBE_IMAGE_TOOL_NAME, DESCRIBE_IMAGE_TOOL_DEF } from "../vision/types";
+import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF } from "../vision/types";
 
 export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unknown>> {
     constructor(modelId: string) {
@@ -38,14 +38,14 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
     }
 
     /**
-     * Whether images were stored during convertMessages for describe_image tool.
+     * Whether images were stored during convertMessages for ask_image tool.
      */
     private _hasStoredImages = false;
 
     /**
      * Convert VS Code chat request messages into OpenAI-compatible message objects.
      * For non-vision models, images are replaced with text references and stored
-     * in the static CommonApi.storedImages map for the describe_image tool.
+     * in the static CommonApi.storedImages map for the ask_image tool.
      */
     convertMessages(
         messages: readonly LanguageModelChatRequestMessage[],
@@ -93,8 +93,8 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
                         imageParts.push(part);
                     } else {
                         // For non-vision models, replace image with text reference
-                        // Use strong directive language so the model knows it MUST use describe_image
-                        textParts.push(`\n[The user sent an image (imageIndex=${imageIndex}). I cannot see images - I MUST call the describe_image tool with imageIndex=${imageIndex} to get a description of this image.]`);
+                        // Use strong directive language so the model knows it MUST use ask_image
+                        textParts.push(`\n[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs (e.g., "What error message appears?", "Read all text visible").]`);
                         imageIndex++;
                     }
                 } else if (part instanceof vscode.LanguageModelToolCallPart) {
@@ -263,18 +263,18 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
         if (toolConfig.tools) {
             toolsList.push(...toolConfig.tools);
         }
-        // Inject describe_image tool for non-vision models with stored images
+        // Inject ask_image tool for non-vision models with stored images
         if (this._hasStoredImages) {
-            toolsList.push(DESCRIBE_IMAGE_TOOL_DEF);
+            toolsList.push(ASK_IMAGE_TOOL_DEF);
         }
         if (toolsList.length > 0) {
             rb.tools = toolsList;
         }
         if (this._hasStoredImages) {
-            // Set to "auto" so the model can freely choose to call describe_image.
+            // Set to "auto" so the model can freely choose to call ask_image.
             // Some providers (DeepSeek) reject forced function tool_choice.
             // The converted messages already contain strong directives telling the
-            // model it MUST use describe_image, and the tool definition is available.
+            // model it MUST use ask_image, and the tool definition is available.
             rb.tool_choice = "auto";
         } else if (toolConfig.tool_choice) {
             rb.tool_choice = toolConfig.tool_choice;

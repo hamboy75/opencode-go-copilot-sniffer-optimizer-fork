@@ -178,7 +178,7 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
             capabilities: {
                 toolCalling: true,
                 // Always declare imageInput=true so VS Code passes image data through.
-                // Non-vision models handle images via the describe_image tool proxy internally.
+                // Non-vision models handle images via the ask_image tool proxy internally.
                 imageInput: true,
             },
             configurationSchema: {

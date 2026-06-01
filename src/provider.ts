@@ -27,7 +27,7 @@ import { AnthropicApi } from "./anthropic/anthropicApi";
 import type { AnthropicRequestBody } from "./anthropic/anthropicTypes";
 import { CommonApi, type StreamUsage } from "./commonApi";
 import { callVisionModel } from "./vision/imageProxy";
-import { DESCRIBE_IMAGE_TOOL_NAME } from "./vision/types";
+import { ASK_IMAGE_TOOL_NAME } from "./vision/types";
 import type { InterceptedToolCall, StoredImage } from "./vision/types";
 import { logger } from "./logger";
 import { l10n } from "./localize";
@@ -339,7 +339,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 }
                 await anthropicApi.processStreamingResponse(response.body, trackingProgress, token);
 
-                // --- Second round: handle describe_image tool call interception ---
+                // --- Second round: handle ask_image tool call interception ---
                 await this._handleInterceptedToolCall({
                     api: anthropicApi,
                     apiMode: "anthropic",
@@ -411,7 +411,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
 
                 await openaiApi.processStreamingResponse(response.body, trackingProgress, token);
 
-                // --- Second round: handle describe_image tool call interception ---
+                // --- Second round: handle ask_image tool call interception ---
                 await this._handleInterceptedToolCall({
                     api: openaiApi,
                     apiMode: "openai",
@@ -501,8 +501,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
     }
 
     /**
-     * Handle a describe_image tool call interception by calling the vision model
-     * and making a second round API request with the tool call + description result.
+     * Handle an ask_image tool call interception by calling the vision model
+     * with the model's specific query and making a second round API request
+     * with the tool call + result. Unlike the old describe_image approach,
+     * the model asks specific questions (query) about the image.
      */
     private async _handleInterceptedToolCall(params: {
         api: CommonApi<any, any>;
@@ -530,12 +532,19 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
         logger.info("vision.intercepted", {
             toolName: intercepted.name,
             imageIndex: intercepted.args.imageIndex,
+            query: intercepted.args.query,
             apiMode: params.apiMode,
         });
 
         const config = vscode.workspace.getConfiguration();
         const visionModelId = config.get<string>("opencodego.visionProxyModel", "qwen3.6-plus");
-        const visionPrompt = config.get<string>("opencodego.visionProxyPrompt", "");
+        const visionPromptSetting = config.get<string>("opencodego.visionProxyPrompt", "");
+        // Use the model's specific query as the prompt to the vision model
+        // This is the key difference from the old describe_image approach:
+        // the model can ask targeted questions ("What color is the button?", "Read the text")
+        // instead of always getting a generic description.
+        const userQuery = intercepted.args.query;
+        const visionPrompt = visionPromptSetting || userQuery;
 
         // Get the stored image data
         const storedImage = params.api.getStoredImage(intercepted.args.imageIndex);
@@ -550,20 +559,20 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             new vscode.LanguageModelThinkingPart(l10n("Reading image..."), visionThinkId) as unknown as LanguageModelResponsePart
         );
 
-        // Call vision model to describe the image (result is for internal use only)
+        // Call vision model to answer the model's specific query about the image
         let description: string;
         try {
             description = await callVisionModel(
                 storedImage.data,
                 storedImage.mimeType,
                 visionModelId,
-                visionPrompt || undefined,
+                visionPrompt,
                 params.token
             );
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
             logger.error("vision.call-failed", { error: errMsg, visionModelId });
-            description = "[Image Description unavailable]";
+            description = "[Image query unavailable]";
         }
 
         // Append "done" to the thinking block, then close it.
@@ -594,7 +603,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 {
                     role: "assistant" as const,
                     content: [
-                        { type: "tool_use" as const, id: toolCallId, name: DESCRIBE_IMAGE_TOOL_NAME, input: toolArgs },
+                        { type: "tool_use" as const, id: toolCallId, name: ASK_IMAGE_TOOL_NAME, input: toolArgs },
                     ],
                 },
                 {
@@ -651,13 +660,13 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     // DeepSeek requires reasoning_content when thinking mode is enabled,
                     // even on tool call assistant messages.
                     // Note: content must be omitted, not null — DeepSeek rejects null content.
-                    reasoning_content: "Calling describe_image tool to get a description of the user's attached image.",
+                    reasoning_content: "Calling ask_image tool to get information about the user's attached image.",
                     tool_calls: [
                         {
                             id: toolCallId,
                             type: "function" as const,
                             function: {
-                                name: DESCRIBE_IMAGE_TOOL_NAME,
+                                name: ASK_IMAGE_TOOL_NAME,
                                 arguments: JSON.stringify(toolArgs),
                             },
                         },

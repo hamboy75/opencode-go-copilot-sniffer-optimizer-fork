@@ -11,7 +11,7 @@ import {
 import { OpenCodeGoModelItem } from "./types";
 import { tryParseJSONObject } from "./utils";
 import type { InterceptedToolCall, StoredImage } from "./vision/types";
-import { DESCRIBE_IMAGE_TOOL_NAME } from "./vision/types";
+import { ASK_IMAGE_TOOL_NAME } from "./vision/types";
 
 /**
  * Token usage information extracted from streaming response usage chunk.
@@ -72,7 +72,7 @@ export abstract class CommonApi<TMessage, TRequestBody> {
     }
 
     /**
-     * When a describe_image tool call is intercepted during streaming,
+     * When an ask_image tool call is intercepted during streaming,
      * this holds the parsed tool call info for the provider to handle.
      */
     public interceptedToolCall: InterceptedToolCall | null = null;
@@ -181,8 +181,8 @@ export abstract class CommonApi<TMessage, TRequestBody> {
         if (!buf.name) {
             return;
         }
-        // Skip describe_image — handled by provider via interceptedToolCall
-        if (buf.name === DESCRIBE_IMAGE_TOOL_NAME) {
+        // Skip ask_image — handled by provider via interceptedToolCall
+        if (buf.name === ASK_IMAGE_TOOL_NAME) {
             return;
         }
         const canParse = tryParseJSONObject(buf.args);
@@ -210,15 +210,15 @@ export abstract class CommonApi<TMessage, TRequestBody> {
             return;
         }
         for (const [idx, buf] of Array.from(this._toolCallBuffers.entries())) {
-            // Intercept describe_image — store on instance for provider to handle
-            if (buf.name === DESCRIBE_IMAGE_TOOL_NAME) {
+            // Intercept ask_image — store on instance for provider to handle
+            if (buf.name === ASK_IMAGE_TOOL_NAME) {
                 const argsText = buf.args.trim() || "{}";
                 const parsed = tryParseJSONObject(argsText);
                 if (parsed.ok) {
                     this.interceptedToolCall = {
                         id: buf.id ?? `call_${Math.random().toString(36).slice(2, 10)}`,
                         name: buf.name,
-                        args: parsed.value as { imageIndex: number; detailLevel?: "brief" | "normal" | "detailed" },
+                        args: parsed.value as { imageIndex: number; query: string },
                     };
                 }
                 this._toolCallBuffers.delete(idx);

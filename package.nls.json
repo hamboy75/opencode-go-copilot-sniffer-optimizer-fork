@@ -43,9 +43,9 @@
 	"config.modelPreset.temperature.desc": "Temperature value (0.0 - 2.0).",
 	"config.modelPreset.top_p.desc": "top_p value (0.0 - 1.0).",
 
-	"config.visionProxyModel.desc": "Vision model ID used by the describe_image tool to describe attached images when the selected model does not support vision.",
-	"config.visionProxyPrompt.desc": "Custom prompt sent to the vision model when describing an image via the describe_image tool.",
-	"config.visionProxyThinking.desc": "Enable thinking/reasoning when describing images via the vision proxy model.",
+	"config.visionProxyModel.desc": "Vision model ID used by the ask_image tool to answer questions about attached images when the selected model does not support vision.",
+	"config.visionProxyPrompt.desc": "Custom prompt sent to the vision model. If set, this overrides the model's query to the ask_image tool. If empty, the model's question is used as the vision prompt.",
+	"config.visionProxyThinking.desc": "Enable thinking/reasoning in the vision proxy model when answering image queries.",
 	"config.enableThirdPartyTokenIndicator.desc": "Enable the Advanced Token indicator in the status bar. The native Copilot token indicator always shows. When this is enabled, the extension also shows an advanced token counter in the VS Code status bar. Default: true.",
 
 	"command.setModelPreset": "Set Model Temperature Preset",

@@ -23,14 +23,14 @@ import { isImageMimeType, isToolResultPart, collectToolResultText, convertToolsT
 import { CommonApi } from "../commonApi";
 import { logger } from "../logger";
 import type { StoredImage } from "../vision/types";
-import { DESCRIBE_IMAGE_TOOL_NAME, DESCRIBE_IMAGE_TOOL_DEF } from "../vision/types";
+import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF } from "../vision/types";
 
 export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBody> {
 	constructor(modelId: string) {
 		super(modelId);
 	}
 
-	/** Whether images were stored during convertMessages for describe_image tool. */
+	/** Whether images were stored during convertMessages for ask_image tool. */
 	private _hasStoredImages = false;
 
 	/** Accumulated input tokens from Anthropic message_start for usage reporting. */
@@ -147,7 +147,7 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				for (let i = 0; i < imageParts.length; i++) {
 					contentBlocks.push({
 						type: "text",
-						text: `[The user sent an image (imageIndex=${imageIndex}). I cannot see images - I MUST call the describe_image tool with imageIndex=${imageIndex} to get a description.]`,
+						text: `[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs (e.g., "What error message appears?", "Read all text visible").]`,
 					});
 					imageIndex++;
 				}
@@ -247,9 +247,9 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				});
 			}
 		}
-		// Inject describe_image tool for non-vision models with stored images
+		// Inject ask_image tool for non-vision models with stored images
 		if (this._hasStoredImages) {
-			const def = DESCRIBE_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+			const def = ASK_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
 			anthropicToolList.push({
 				name: def.function.name,
 				description: def.function.description,
@@ -262,9 +262,9 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 
 		// Add tool_choice (Anthropic format)
 		if (this._hasStoredImages) {
-			// Set to "auto" so the model can freely choose to call describe_image.
+			// Set to "auto" so the model can freely choose to call ask_image.
 			// The converted messages already contain strong directives telling the
-			// model it MUST use describe_image, and the tool definition is available.
+			// model it MUST use ask_image, and the tool definition is available.
 			rb.tool_choice = { type: "auto" };
 		} else if (toolConfig.tool_choice) {
 			if (toolConfig.tool_choice === "auto") {

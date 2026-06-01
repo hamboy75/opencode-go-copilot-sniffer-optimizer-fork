@@ -93,9 +93,9 @@ Available in `settings.json`:
 | `opencodego.commitIncludeCommitDiff` | `false` | Include the actual code changes (diff) of recent commits in the style reference, helping the model generate messages that better match the project's commit style. |
 | `opencodego.enableZenFreeModels` | `false` | Enable OpenCode Zen free models in the model picker. Zen free models are NOT supported for git commit message generation. Requires a full reload to take effect. |
 | `opencodego.commitAttachContextFiles` | `true` | Attach the content of AGENTS.md and README.md from the repository root as additional context for commit message generation, helping the model better understand the project. |
-| `opencodego.visionProxyModel` | `qwen3.6-plus` | Vision model used by the `describe_image` tool when the selected model does not support vision. |
-| `opencodego.visionProxyPrompt` | `""` | Custom prompt sent to the vision model when describing an image. |
-| `opencodego.visionProxyThinking` | `false` | Enable thinking/reasoning when describing images via the vision proxy. |
+| `opencodego.visionProxyModel` | `qwen3.6-plus` | Vision model used by the `ask_image` tool when the selected model does not support vision. |
+| `opencodego.visionProxyPrompt` | `""` | Custom prompt sent to the vision model. If set, overrides the model's `ask_image` query. If empty, the model's question is used. |
+| `opencodego.visionProxyThinking` | `false` | Enable thinking/reasoning in the vision proxy model when answering image queries. |
 
 > [!NOTE]
 > Models with switchable thinking (e.g., DeepSeek, Qwen) provide reasoning effort levels such as `Disabled`/`High`/`Maximum`.
@@ -199,9 +199,9 @@ MIT License. This project references code from [oai-compatible-copilot](https://
 | `opencodego.commitIncludeCommitDiff` | `false` | 在风格参考中包含历史提交的实际代码变更（diff），帮助模型生成更符合项目提交风格的消息。 |
 | `opencodego.enableZenFreeModels` | `false` | 启用 OpenCode Zen 免费模型并添加到模型选择器中。暂不支持用于 Git 提交消息生成。更改后需重载 VS Code 生效。 |
 | `opencodego.commitAttachContextFiles` | `true` | 将仓库根目录的 AGENTS.md 和 README.md 作为额外上下文附加到提交消息生成中，帮助模型更好地理解项目。 |
-| `opencodego.visionProxyModel` | `qwen3.6-plus` | 用于 describe_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于描述附带图片。 |
-| `opencodego.visionProxyPrompt` | `""` | 发送给视觉模型的图片描述自定义提示词。 |
-| `opencodego.visionProxyThinking` | `false` | 在视觉代理描述图片时启用思考/推理功能。 |
+| `opencodego.visionProxyModel` | `qwen3.6-plus` | 用于 ask_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于回答图片相关问题。 |
+| `opencodego.visionProxyPrompt` | `""` | 发送给视觉模型的自定义提示词。如果设置，将覆盖模型 ask_image 查询。如果为空，则使用模型的提问。 |
+| `opencodego.visionProxyThinking` | `false` | 在视觉代理模型回答图片查询时启用思考/推理功能。 |
 
 > [!NOTE]
 > 支持切换思考模式的模型（如 DeepSeek、Qwen）提供`禁用思考`/`高`/`极高`等推理强度选项。
