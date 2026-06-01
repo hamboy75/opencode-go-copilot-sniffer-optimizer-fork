@@ -139,7 +139,7 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 									toolTexts.push(result.text);
 								}
 							} else if (!modelSupportsVision && inner instanceof vscode.LanguageModelDataPart && isImageMimeType(inner.mimeType)) {
-								toolTexts.push(`\n[Image data from tool call (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs.\n]`);
+								toolTexts.push(`\n[Image data from tool call (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. First call ask_image for a brief description to get an overview of the image.\n2. Then call ask_image again with specific questions about details you need (e.g., colors, text content, UI elements, error messages, or any other visible information).\n]`);
 								imageIndex++;
 							}
 						}
@@ -196,7 +196,7 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				for (let i = 0; i < imageParts.length; i++) {
 					contentBlocks.push({
 						type: "text",
-						text: `[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs (e.g., "What error message appears?", "Read all text visible").]`,
+						text: `[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. First call ask_image for a brief description to get an overview of the image.\n2. Then call ask_image again with specific questions about details you need (e.g., colors, text content, UI elements, error messages, or any other visible information).\n]`,
 					});
 					imageIndex++;
 				}

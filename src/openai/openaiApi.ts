@@ -128,7 +128,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
                     } else {
                         // For non-vision models, replace image with text reference
                         // Use strong directive language so the model knows it MUST use ask_image
-                        textParts.push(`\n[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs (e.g., "What error message appears?", "Read all text visible").]`);
+                        textParts.push(`\n[The user sent an image (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. First call ask_image for a brief description to get an overview of the image.\n2. Then call ask_image again with specific questions about details you need (e.g., colors, text content, UI elements, error messages, or any other visible information).\n]`);
                         imageIndex++;
                     }
                 } else if (part instanceof vscode.LanguageModelToolCallPart) {
@@ -155,7 +155,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
                                     toolTexts.push(result.text);
                                 }
                             } else if (!modelSupportsVision && inner instanceof vscode.LanguageModelDataPart && isImageMimeType(inner.mimeType)) {
-                                toolTexts.push(`\n[Image data from tool call (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. Call ask_image with query="Describe this image briefly" to get an overview.\n2. Then call ask_image again with specific questions based on what the user needs.\n]`);
+                                toolTexts.push(`\n[Image data from tool call (imageIndex=${imageIndex}). I am a text-only model and CANNOT see images directly. I MUST call the ask_image tool to learn about it.\n\nRecommended strategy:\n1. First call ask_image for a brief description to get an overview of the image.\n2. Then call ask_image again with specific questions about details you need (e.g., colors, text content, UI elements, error messages, or any other visible information).\n]`);
                                 imageIndex++;
                             }
                         }
