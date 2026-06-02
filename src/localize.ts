@@ -60,8 +60,7 @@ const zhCN: Record<string, string> = {
 	"Reasoning Effort": "推理强度",
 
 	// vision proxy
-	"Reading image...": "正在阅读图片...",
-	" done": " 完成",
+	"Querying vision model: \"{0}\"": "正在根据图片提问：{0}",
 	"The image you sent was flagged as sensitive by the content moderation system. Please try a different image.": "您发送的图片被内容审核系统判定为敏感，请尝试更换图片。",
 
 	// extension.ts - model preset (setModelPreset command)

@@ -62,6 +62,22 @@ function reportNativeUsage(
     );
 }
 
+function getRequestedReasoningEffort(options: ProvideLanguageModelChatResponseOptions): string | undefined {
+    const modelConfigurationEffort = options.modelConfiguration?.reasoningEffort;
+    if (typeof modelConfigurationEffort === "string") {
+        return modelConfigurationEffort;
+    }
+
+    const modelOptions = (options as unknown as { modelOptions?: Record<string, unknown> }).modelOptions;
+    const modelOptionsThinking = modelOptions?.thinking as { type?: unknown } | undefined;
+    if (modelOptionsThinking?.type === false) {
+        return "disabled";
+    }
+
+    const modelOptionsEffort = modelOptions?.reasoning_effort ?? modelOptions?.reasoningEffort;
+    return typeof modelOptionsEffort === "string" ? modelOptionsEffort : undefined;
+}
+
 /**
  * VS Code Chat provider backed by OpenCode Go API.
  */
@@ -163,18 +179,19 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             // - "disabled" → turn off thinking (unless model has thinkingMode="always")
             // - "enabled" → turn on thinking with default effort
             // - "high"/"max" → turn on thinking with specified effort
-            if (um && options.modelConfiguration?.reasoningEffort) {
-                const effort = options.modelConfiguration.reasoningEffort;
-                if (typeof effort === 'string') {
-                    if (effort === 'disabled') {
+            if (um) {
+                const effort = getRequestedReasoningEffort(options);
+                if (effort) {
+                    if (effort === "disabled") {
                         if (um.thinkingMode !== "always") {
                             um.enable_thinking = false;
                             um.include_reasoning_in_request = false;
+                            um.reasoning_effort = undefined;
                         }
                     } else {
                         um.enable_thinking = true;
                         um.include_reasoning_in_request = true;
-                        if (effort !== 'enabled') {
+                        if (effort !== "enabled") {
                             um.reasoning_effort = effort;
                         }
                     }
@@ -589,13 +606,21 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
 
             const visionPrompt = intercepted.args.query;
 
-            // Emit a brief thinking indicator
-            const visionThinkId = `vision_${Date.now()}_${round}`;
+            // Block 1: show the model's question in a thinking block
+            const questionThinkId = `vision_q_${Date.now()}_${round}`;
             params.trackingProgress.report(
-                new vscode.LanguageModelThinkingPart(l10n("Reading image..."), visionThinkId) as unknown as LanguageModelResponsePart
+                new vscode.LanguageModelThinkingPart(
+                    l10nFormat("Querying vision model: \"{0}\"", visionPrompt ?? ""),
+                    questionThinkId
+                ) as unknown as LanguageModelResponsePart
+            );
+            // Close block 1 — the vision model's output comes next as regular text
+            params.trackingProgress.report(
+                new vscode.LanguageModelThinkingPart("", questionThinkId) as unknown as LanguageModelResponsePart
             );
 
-            // Call vision model — single image or multi-image depending on tool used
+            // Call vision model — single image or multi-image depending on tool used.
+            // The output streams directly as LanguageModelTextPart (block 3).
             let description: string;
             try {
                 if (intercepted.name === ASK_WITH_MULTI_IMAGE_TOOL_NAME) {
@@ -610,7 +635,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                         logger.warn("vision.not-enough-images", { indices });
                         description = "[Not enough images for comparison]";
                     } else {
-                        description = await callVisionModelMulti(images, visionModelId, visionPrompt, params.token);
+                        description = await callVisionModelMulti(images, visionModelId, visionPrompt, params.token, params.trackingProgress);
                     }
                 } else {
                     // Single image
@@ -624,7 +649,8 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                             storedImage.mimeType,
                             visionModelId,
                             visionPrompt,
-                            params.token
+                            params.token,
+                            params.trackingProgress
                         );
                     }
                 }
@@ -633,14 +659,6 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 logger.error("vision.call-failed", { error: errMsg, visionModelId });
                 description = "[Image query unavailable]";
             }
-
-            // Close thinking indicator
-            params.trackingProgress.report(
-                new vscode.LanguageModelThinkingPart(l10n(" done"), visionThinkId) as unknown as LanguageModelResponsePart
-            );
-            params.trackingProgress.report(
-                new vscode.LanguageModelThinkingPart("", visionThinkId) as unknown as LanguageModelResponsePart
-            );
 
             // If user cancelled during the vision model call, stop
             if (params.token.isCancellationRequested) {
@@ -804,7 +822,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     if (params.um?.enable_thinking === true) {
                         body.thinking = { type: "enabled" };
                     } else {
-                        body.thinking = { type: "disabled" };
+                        body.thinking = { type: false };
                     }
 
                     // Inject tools (VS Code + ask_image + ask_with_multi_image)
