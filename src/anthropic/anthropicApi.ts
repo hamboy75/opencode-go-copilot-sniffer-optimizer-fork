@@ -23,7 +23,7 @@ import { isImageMimeType, isToolResultPart, collectToolResultText, convertToolsT
 import { CommonApi } from "../commonApi";
 import { logger } from "../logger";
 import type { StoredImage } from "../vision/types";
-import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF } from "../vision/types";
+import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF, ASK_WITH_MULTI_IMAGE_TOOL_NAME, ASK_WITH_MULTI_IMAGE_TOOL_DEF } from "../vision/types";
 
 export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBody> {
 	constructor(modelId: string) {
@@ -290,14 +290,22 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 				});
 			}
 		}
-		// Inject ask_image tool for non-vision models with stored images
+		// Inject ask_image + ask_with_multi_image for non-vision models with stored images
 		if (this._hasImages) {
-			const def = ASK_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+			const imgDef = ASK_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
 			anthropicToolList.push({
-				name: def.function.name,
-				description: def.function.description,
-				input_schema: def.function.parameters,
+				name: imgDef.function.name,
+				description: imgDef.function.description,
+				input_schema: imgDef.function.parameters,
 			});
+			if (this._localImages.length >= 2) {
+				const multiDef = ASK_WITH_MULTI_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+				anthropicToolList.push({
+					name: multiDef.function.name,
+					description: multiDef.function.description,
+					input_schema: multiDef.function.parameters,
+				});
+			}
 		}
 		if (anthropicToolList.length > 0) {
 			rb.tools = anthropicToolList;

@@ -32,7 +32,7 @@ import {
 import { CommonApi, StreamUsage } from "../commonApi";
 import { logger } from "../logger";
 import type { StoredImage } from "../vision/types";
-import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF } from "../vision/types";
+import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF, ASK_WITH_MULTI_IMAGE_TOOL_NAME, ASK_WITH_MULTI_IMAGE_TOOL_DEF } from "../vision/types";
 
 export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unknown>> {
     constructor(modelId: string) {
@@ -309,9 +309,12 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
         if (toolConfig.tools) {
             toolsList.push(...toolConfig.tools);
         }
-        // Inject ask_image tool for non-vision models with stored images
+        // Inject ask_image + ask_with_multi_image for non-vision models with stored images
         if (this._hasImages) {
             toolsList.push(ASK_IMAGE_TOOL_DEF);
+            if (this._localImages.length >= 2) {
+                toolsList.push(ASK_WITH_MULTI_IMAGE_TOOL_DEF);
+            }
         }
         if (toolsList.length > 0) {
             rb.tools = toolsList;

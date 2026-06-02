@@ -26,8 +26,8 @@ import { OpenaiApi } from "./openai/openaiApi";
 import { AnthropicApi } from "./anthropic/anthropicApi";
 import type { AnthropicRequestBody } from "./anthropic/anthropicTypes";
 import { CommonApi, type StreamUsage } from "./commonApi";
-import { callVisionModel } from "./vision/imageProxy";
-import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF } from "./vision/types";
+import { callVisionModel, callVisionModelMulti } from "./vision/imageProxy";
+import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF, ASK_WITH_MULTI_IMAGE_TOOL_NAME, ASK_WITH_MULTI_IMAGE_TOOL_DEF } from "./vision/types";
 import type { InterceptedToolCall, StoredImage } from "./vision/types";
 import { logger } from "./logger";
 import { l10n } from "./localize";
@@ -582,35 +582,52 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 round,
                 toolName: intercepted.name,
                 imageIndex: intercepted.args.imageIndex,
+                imageIndices: intercepted.args.imageIndices,
                 query: intercepted.args.query,
                 apiMode: params.apiMode,
             });
 
             const visionPrompt = intercepted.args.query;
 
-            // Get the stored image data
-            const storedImage = api.getStoredImage(intercepted.args.imageIndex);
-            if (!storedImage) {
-                logger.warn("vision.image-not-found", { imageIndex: intercepted.args.imageIndex });
-                break;
-            }
-
-            // Emit a brief thinking indicator BEFORE reading the image
+            // Emit a brief thinking indicator
             const visionThinkId = `vision_${Date.now()}_${round}`;
             params.trackingProgress.report(
                 new vscode.LanguageModelThinkingPart(l10n("Reading image..."), visionThinkId) as unknown as LanguageModelResponsePart
             );
 
-            // Call vision model to answer the model's specific query about the image
+            // Call vision model — single image or multi-image depending on tool used
             let description: string;
             try {
-                description = await callVisionModel(
-                    storedImage.data,
-                    storedImage.mimeType,
-                    visionModelId,
-                    visionPrompt,
-                    params.token
-                );
+                if (intercepted.name === ASK_WITH_MULTI_IMAGE_TOOL_NAME) {
+                    // Multi-image: collect all referenced images
+                    const indices = intercepted.args.imageIndices ?? [];
+                    const images: StoredImage[] = [];
+                    for (const idx of indices) {
+                        const img = api.getStoredImage(idx);
+                        if (img) images.push(img);
+                    }
+                    if (images.length < 2) {
+                        logger.warn("vision.not-enough-images", { indices });
+                        description = "[Not enough images for comparison]";
+                    } else {
+                        description = await callVisionModelMulti(images, visionModelId, visionPrompt, params.token);
+                    }
+                } else {
+                    // Single image
+                    const storedImage = api.getStoredImage(intercepted.args.imageIndex ?? 0);
+                    if (!storedImage) {
+                        logger.warn("vision.image-not-found", { imageIndex: intercepted.args.imageIndex });
+                        description = "[Image not found]";
+                    } else {
+                        description = await callVisionModel(
+                            storedImage.data,
+                            storedImage.mimeType,
+                            visionModelId,
+                            visionPrompt,
+                            params.token
+                        );
+                    }
+                }
             } catch (err) {
                 const errMsg = err instanceof Error ? err.message : String(err);
                 logger.error("vision.call-failed", { error: errMsg, visionModelId });
@@ -631,6 +648,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 break;
             }
 
+            // Build round messages
             // Create a fresh abort controller for this round
             const roundAbortController = new AbortController();
             const roundTimeoutMs = vscode.workspace.getConfiguration().get<number>("opencodego.requestTimeout", 600000);
@@ -639,7 +657,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     roundAbortController.abort();
                 }
             }, roundTimeoutMs);
-            // Forward user cancellation
+            // Forward user cancellation to the new controller
             if (params.token.onCancellationRequested) {
                 params.token.onCancellationRequested(() => {
                     if (!roundAbortController.signal.aborted) {
@@ -649,71 +667,79 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             }
 
             try {
-                if (params.apiMode === "anthropic") {
-                    // Anthropic format: append tool_use + tool_result to accumulated messages
-                    currentMessages.push({
-                        role: "assistant" as const,
-                        content: [
-                            { type: "tool_use" as const, id: intercepted.id, name: ASK_IMAGE_TOOL_NAME, input: intercepted.args },
-                        ],
-                    });
-                    currentMessages.push({
-                        role: "user" as const,
-                        content: [
-                            { type: "tool_result" as const, tool_use_id: intercepted.id, content: description },
-                        ],
-                    });
+            if (params.apiMode === "anthropic") {
+                // Anthropic format: tool_use + tool_result
+                currentMessages.push({
+                    role: "assistant" as const,
+                    content: [
+                        { type: "tool_use" as const, id: intercepted.id, name: intercepted.name, input: intercepted.args },
+                    ],
+                });
+                currentMessages.push({
+                    role: "user" as const,
+                    content: [
+                        { type: "tool_result" as const, tool_use_id: intercepted.id, content: description },
+                    ],
+                });
 
-                    const body: Record<string, unknown> = {
-                        model: params.um?.id ?? params.model.id,
-                        messages: currentMessages,
-                        stream: true,
-                    };
-                    if (params.um?.max_completion_tokens !== undefined) {
-                        body.max_tokens = params.um.max_completion_tokens;
-                    } else if (params.um?.max_tokens !== undefined) {
-                        body.max_tokens = params.um.max_tokens;
+                const body: Record<string, unknown> = {
+                    model: params.um?.id ?? params.model.id,
+                    messages: currentMessages,
+                    stream: true,
+                };
+                if (params.um?.max_completion_tokens !== undefined) {
+                    body.max_tokens = params.um.max_completion_tokens;
+                } else if (params.um?.max_tokens !== undefined) {
+                    body.max_tokens = params.um.max_tokens;
+                }
+                if (params.um?.temperature !== undefined && params.um.temperature !== null) {
+                    body.temperature = params.um.temperature;
+                }
+                const systemContent = (params.api as any)._systemContent as string | undefined;
+                if (systemContent) {
+                    body.system = systemContent;
+                }
+                if (params.um?.enable_thinking === true) {
+                    if (params.um?.reasoning_effort === 'adaptive') {
+                        body.thinking = { type: "adaptive" };
+                    } else {
+                        body.thinking = { type: "enabled", budget_tokens: 8192 };
                     }
-                    if (params.um?.temperature !== undefined && params.um.temperature !== null) {
-                        body.temperature = params.um.temperature;
-                    }
-                    const systemContent = (params.api as any)._systemContent as string | undefined;
-                    if (systemContent) {
-                        body.system = systemContent;
-                    }
-                    if (params.um?.enable_thinking === true) {
-                        if (params.um?.reasoning_effort === 'adaptive') {
-                            body.thinking = { type: "adaptive" };
-                        } else {
-                            body.thinking = { type: "enabled", budget_tokens: 8192 };
-                        }
-                    }
+                }
 
-                    // Inject tools (VS Code tools + ask_image)
-                    const anthropicToolList: Array<{ name: string; description?: string; input_schema?: object }> = [];
-                    const toolConfig = convertToolsToOpenAI(params.options);
-                    if (toolConfig.tools) {
-                        for (const tool of toolConfig.tools) {
-                            anthropicToolList.push({
-                                name: tool.function.name,
-                                description: tool.function.description,
-                                input_schema: tool.function.parameters,
-                            });
-                        }
-                    }
-                    if (hasLocalImages) {
-                        const def = ASK_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+                // Inject tools (VS Code + ask_image + ask_with_multi_image)
+                const anthropicToolList: Array<{ name: string; description?: string; input_schema?: object }> = [];
+                const toolConfig = convertToolsToOpenAI(params.options);
+                if (toolConfig.tools) {
+                    for (const tool of toolConfig.tools) {
                         anthropicToolList.push({
-                            name: def.function.name,
-                            description: def.function.description,
-                            input_schema: def.function.parameters,
+                            name: tool.function.name,
+                            description: tool.function.description,
+                            input_schema: tool.function.parameters,
                         });
                     }
-                    if (anthropicToolList.length > 0) {
-                        body.tools = anthropicToolList;
+                }
+                if (hasLocalImages) {
+                    const singleDef = ASK_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+                    anthropicToolList.push({
+                        name: singleDef.function.name,
+                        description: singleDef.function.description,
+                        input_schema: singleDef.function.parameters,
+                    });
+                    if (((api as any)._localImages as any[])?.length >= 2) {
+                        const multiDef = ASK_WITH_MULTI_IMAGE_TOOL_DEF as unknown as { function: { name: string; description: string; parameters: object } };
+                        anthropicToolList.push({
+                            name: multiDef.function.name,
+                            description: multiDef.function.description,
+                            input_schema: multiDef.function.parameters,
+                        });
                     }
+                }
+                if (anthropicToolList.length > 0) {
+                    body.tools = anthropicToolList;
+                }
 
-                    const normalizedUrl = params.baseUrl.replace(/\/+$/, "");
+                const normalizedUrl = params.baseUrl.replace(/\/+$/, "");
                     const url = normalizedUrl.endsWith("/v1")
                         ? `${normalizedUrl}/messages`
                         : `${normalizedUrl}/v1/messages`;
@@ -739,13 +765,13 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     // OpenAI format: append assistant tool_call + tool result
                     currentMessages.push({
                         role: "assistant" as const,
-                        reasoning_content: `Calling ask_image tool (round ${round}) to get information about the user's attached image.`,
+                        reasoning_content: `Calling ${intercepted.name} tool (round ${round}) to get information about the user's attached image(s).`,
                         tool_calls: [
                             {
                                 id: intercepted.id,
                                 type: "function" as const,
                                 function: {
-                                    name: ASK_IMAGE_TOOL_NAME,
+                                    name: intercepted.name,
                                     arguments: JSON.stringify(intercepted.args),
                                 },
                             },
@@ -781,7 +807,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                         body.thinking = { type: "disabled" };
                     }
 
-                    // Inject tools (VS Code tools + ask_image)
+                    // Inject tools (VS Code + ask_image + ask_with_multi_image)
                     const openaiToolList: any[] = [];
                     const toolConfig = convertToolsToOpenAI(params.options);
                     if (toolConfig.tools) {
@@ -789,6 +815,9 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     }
                     if (hasLocalImages) {
                         openaiToolList.push(ASK_IMAGE_TOOL_DEF);
+                        if (((api as any)._localImages as any[])?.length >= 2) {
+                            openaiToolList.push(ASK_WITH_MULTI_IMAGE_TOOL_DEF);
+                        }
                     }
                     if (openaiToolList.length > 0) {
                         body.tools = openaiToolList;

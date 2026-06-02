@@ -9,15 +9,15 @@ export interface StoredImage {
 }
 
 /**
- * Information about an intercepted ask_image tool call.
+ * Information about an intercepted ask_image / ask_with_multi_image tool call.
  */
 export interface InterceptedToolCall {
     /** Tool call ID from the API */
     id: string;
-    /** Tool name (always "ask_image") */
+    /** Tool name ("ask_image" or "ask_with_multi_image") */
     name: string;
-    /** Parsed arguments (imageIndex, query) */
-    args: { imageIndex: number; query: string };
+    /** Parsed arguments */
+    args: { imageIndex?: number; imageIndices?: number[]; query: string };
 }
 
 /**
@@ -50,6 +50,37 @@ export const ASK_IMAGE_TOOL_DEF = {
 };
 
 export const ASK_IMAGE_TOOL_NAME = "ask_image";
+
+/**
+ * The ask_with_multi_image tool definition — same as ask_image but accepts
+ * multiple image indices so the model can ask about differences, compare
+ * screenshots, or analyze multiple images at once.
+ */
+export const ASK_WITH_MULTI_IMAGE_TOOL_DEF = {
+    type: "function" as const,
+    function: {
+        name: "ask_with_multi_image",
+        description: "Like ask_image, but accepts MULTIPLE images at once. Use this when you need to compare, contrast, or analyze multiple images together (e.g. 'what's different between these two screenshots?', 'which layout is better?', 'do these images show the same error?').\n\nIf you only need to ask about ONE image, use ask_image instead — it's simpler.",
+        parameters: {
+            type: "object",
+            properties: {
+                imageIndices: {
+                    type: "array",
+                    items: { type: "integer" },
+                    description: "Array of 0-based image indices to analyze. At least 2 indices. Example: [0, 1] to compare the first and second image.",
+                    minItems: 2,
+                },
+                query: {
+                    type: "string",
+                    description: "The question about the images. Since the vision model sees ALL selected images at once, ask about relationships, differences, or comparisons. Examples: 'What are the differences between these two screenshots?', 'Which UI design looks more modern?', 'Do both images show the same error code?'",
+                },
+            },
+            required: ["imageIndices", "query"],
+        },
+    },
+};
+
+export const ASK_WITH_MULTI_IMAGE_TOOL_NAME = "ask_with_multi_image";
 
 export const DEFAULT_VISION_PROMPT =
     "Analyze this image and answer the user's question based on visual content only. Be accurate and specific.";
