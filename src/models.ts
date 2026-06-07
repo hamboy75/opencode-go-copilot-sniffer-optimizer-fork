@@ -68,6 +68,7 @@ const BUILT_IN_MODELS: BuiltInModelDef[] = [
     // ── Qwen series ── 阿里云百炼: Qwen3.7-Max 1M context, Qwen3.6-Plus 1M context, Qwen3.5-Plus 同代同规格 ──
     // Note: Qwen 系列使用 Anthropic API 格式 (messages endpoint)
     { baseId: "qwen3.7-max", displayName: "Qwen3.7 Max", vision: false, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 65536 },
+    { baseId: "qwen3.7-plus", displayName: "Qwen3.7 Plus", vision: true, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 65536 },
     { baseId: "qwen3.6-plus", displayName: "Qwen3.6 Plus", vision: true, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 32768 },
     { baseId: "qwen3.5-plus", displayName: "Qwen3.5 Plus", vision: true, thinkingMode: "switchable", apiMode: "anthropic", contextLength: 1000000, maxTokens: 32768 },
 ];
