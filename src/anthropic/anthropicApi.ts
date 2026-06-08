@@ -269,13 +269,14 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 		}
 
 		// Add thinking mode (Anthropic-compatible format)
-		// Only set when thinking is enabled; omit when disabled to avoid sending invalid values
 		if (um?.enable_thinking === true) {
 			if (um?.reasoning_effort === 'adaptive') {
 				rb.thinking = { type: "adaptive" };
 			} else {
 				rb.thinking = { type: "enabled", budget_tokens: 8192 };
 			}
+		} else {
+			rb.thinking = { type: "disabled" };
 		}
 
 		// Add tools configuration

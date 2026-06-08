@@ -277,7 +277,7 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
                 }
             }
         } else {
-            rb.thinking = { type: false };
+            rb.thinking = { type: "disabled" };
         }
 
         // OpenRouter/OpenCode Go reasoning configuration
