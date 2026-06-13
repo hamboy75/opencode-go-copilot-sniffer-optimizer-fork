@@ -56,7 +56,9 @@
 | 系列 | 模型 ID | 视觉 | 推理强度选择器 | API 格式 |
 |------|---------|------|----------------|----------|
 | GLM | `glm-5.1`, `glm-5` | ❌ | `思考`（不支持思考切换） | OpenAI |
-| Kimi | `kimi-k2.5`, `kimi-k2.6`, `kimi-k2.7-code` | ✅ | `思考`（不支持思考切换） | OpenAI |
+| Kimi | `kimi-k2.5`, `kimi-k2.6`, `kimi-k2.7-code`¹ | ✅ | `思考`（不支持思考切换） | OpenAI |
+
+> ¹ `kimi-k2.7-code` 不支持设置 Temperature 参数。
 | DeepSeek | `deepseek-v4-pro`, `deepseek-v4-flash` | ❌ | `禁用思考` / `高` / `极高` | OpenAI |
 | MiMo | `mimo-v2-pro`, `mimo-v2-omni`, `mimo-v2.5-pro`, `mimo-v2.5` | mimo-v2-omni ✅ | `禁用思考` / `思考` | OpenAI |
 | MiniMax | `minimax-m3`, `minimax-m2.7`, `minimax-m2.5` | ❌ | `禁用思考` / `自动` | OpenAI (m2.7 使用 Anthropic) |
@@ -498,6 +500,7 @@ src/
 | `defaultReasoningEffort` | `string` (可选) | 默认推理力度 |
 | `supportedReasoningEfforts` | `string[]` (可选) | 支持的推理力度选项 |
 | `includeReasoningInRequest` | `boolean` (可选) | 是否在 assistant 消息中包含 reasoning_content |
+| `supportsTemperature` | `boolean` (可选) | 是否支持设置 temperature/top_p，默认 true |
 | `contextLength` | `number` (可选) | 默认上下文长度 |
 | `maxTokens` | `number` (可选) | 默认最大输出 Token |
 | `extra` | `Record<string, unknown>` (可选) | 额外的请求体参数 |
@@ -547,6 +550,7 @@ src/
 | `family` | `string` (可选) | 模型系列 |
 | `include_reasoning_in_request` | `boolean` (可选) | 是否在请求中包含推理内容 |
 | `thinkingMode` | `"switchable" \| "always"` (可选) | 思考模式类型 |
+| `supportsTemperature` | `boolean` (可选) | 是否支持设置 temperature/top_p，默认 true |
 | `useForCommitGeneration` | `boolean` (可选) | 是否用于提交消息生成 |
 | `delay` | `number` (可选) | 模型专属请求延迟 |
 | `apiMode` | `string` (可选) | API 模式 |

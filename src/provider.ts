@@ -200,25 +200,31 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
 
             // Inject temperature & top_p from model preset or custom settings
             if (um) {
-                const tempPreset = config.get<string>("opencodego.modelPreset", "custom");
-                if (tempPreset !== "custom") {
-                    const presets = config.get<ModelPreset[]>("opencodego.modelPresets", []);
-                    const matchedPreset = presets.find((p) => p.id === tempPreset);
-                    if (matchedPreset) {
-                        um.temperature = matchedPreset.temperature;
+                if (um.supportsTemperature !== false) {
+                    const tempPreset = config.get<string>("opencodego.modelPreset", "custom");
+                    if (tempPreset !== "custom") {
+                        const presets = config.get<ModelPreset[]>("opencodego.modelPresets", []);
+                        const matchedPreset = presets.find((p) => p.id === tempPreset);
+                        if (matchedPreset) {
+                            um.temperature = matchedPreset.temperature;
+                        }
+                    } else {
+                        const userTemperature = config.get<number | null>("opencodego.temperature", null);
+                        if (userTemperature !== null) {
+                            um.temperature = userTemperature;
+                        }
+                        const userTopP = config.get<number | null>("opencodego.top_p", null);
+                        if (userTopP !== null) {
+                            um.top_p = userTopP;
+                        } else {
+                            // Keep top_p undefined so the model uses its default
+                            um.top_p = undefined;
+                        }
                     }
                 } else {
-                    const userTemperature = config.get<number | null>("opencodego.temperature", null);
-                    if (userTemperature !== null) {
-                        um.temperature = userTemperature;
-                    }
-                    const userTopP = config.get<number | null>("opencodego.top_p", null);
-                    if (userTopP !== null) {
-                        um.top_p = userTopP;
-                    } else {
-                        // Keep top_p undefined so the model uses its default
-                        um.top_p = undefined;
-                    }
+                    // Model does not support temperature; ensure it's not sent
+                    um.temperature = undefined;
+                    um.top_p = undefined;
                 }
             }
 
@@ -735,7 +741,9 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     body.max_tokens = params.um.max_tokens;
                 }
                 if (params.um?.temperature !== undefined && params.um.temperature !== null) {
-                    body.temperature = params.um.temperature;
+                    if (params.um.supportsTemperature !== false) {
+                        body.temperature = params.um.temperature;
+                    }
                 }
                 const systemContent = (params.api as any)._systemContent as string | undefined;
                 if (systemContent) {
@@ -832,7 +840,9 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                         stream_options: { include_usage: true },
                     };
                     if (params.um?.temperature !== undefined && params.um.temperature !== null) {
-                        body.temperature = params.um.temperature;
+                        if (params.um.supportsTemperature !== false) {
+                            body.temperature = params.um.temperature;
+                        }
                     }
                     if (params.um?.top_p !== undefined && params.um.top_p !== null) {
                         body.top_p = params.um.top_p;

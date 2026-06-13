@@ -52,6 +52,8 @@ export interface OpenCodeGoModelItem {
     apiMode?: string;
     /** Whether this model supports switching thinking on/off ("switchable"), always has it ("always"), or only disabled/adaptive ("adaptive") */
     thinkingMode?: "switchable" | "always" | "adaptive";
+    /** Whether this model supports setting temperature/top_p. Default true. */
+    supportsTemperature?: boolean;
     /** Custom HTTP headers */
     headers?: Record<string, string>;
 

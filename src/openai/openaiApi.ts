@@ -245,7 +245,9 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
     ): Record<string, unknown> {
         // temperature
         if (um?.temperature !== undefined && um.temperature !== null) {
-            rb.temperature = um.temperature;
+            if (um.supportsTemperature !== false) {
+                rb.temperature = um.temperature;
+            }
         }
 
         // top_p

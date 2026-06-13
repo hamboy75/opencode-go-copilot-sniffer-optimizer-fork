@@ -20,6 +20,8 @@ interface BuiltInModelDef {
     supportedReasoningEfforts?: string[];
     /** Whether to include reasoning_content in assistant messages */
     includeReasoningInRequest?: boolean;
+    /** Whether the model supports setting temperature/top_p. Default true. */
+    supportsTemperature?: boolean;
     /** Default context length */
     contextLength?: number;
     /** Default max output tokens */
@@ -48,7 +50,7 @@ const BUILT_IN_MODELS: BuiltInModelDef[] = [
     // { baseId: "kimi-k2.6", displayName: "Kimi K2.6", vision: true, thinkingMode: "switchable", contextLength: 262144, maxTokens: 16384 },
     { baseId: "kimi-k2.5", displayName: "Kimi K2.5", vision: true, thinkingMode: "always", contextLength: 262144, maxTokens: 16384 },
     { baseId: "kimi-k2.6", displayName: "Kimi K2.6", vision: true, thinkingMode: "always", contextLength: 262144, maxTokens: 16384 },
-    { baseId: "kimi-k2.7-code", displayName: "Kimi K2.7", vision: true, thinkingMode: "always", contextLength: 262144, maxTokens: 16384 },
+    { baseId: "kimi-k2.7-code", displayName: "Kimi K2.7", vision: true, thinkingMode: "always", supportsTemperature: false, contextLength: 262144, maxTokens: 16384 },
 
     // ── DeepSeek series ── 官方文档: 1M context, 384K max output ──
     { baseId: "deepseek-v4-pro", displayName: "DeepSeek V4 Pro", vision: false, thinkingMode: "switchable", defaultReasoningEffort: "max", supportedReasoningEfforts: ["high", "max"], contextLength: 1000000, maxTokens: 393216 },
@@ -210,6 +212,7 @@ export function getBuiltInModelConfig(modelId: string): OpenCodeGoModelItem | un
         owned_by: "opencode",
         displayName: def.displayName,
         vision: def.vision,
+        supportsTemperature: def.supportsTemperature ?? true,
         context_length: def.contextLength ?? DEFAULT_CONTEXT_LENGTH,
         max_completion_tokens: def.maxTokens ?? DEFAULT_MAX_TOKENS,
         apiMode: def.apiMode ?? "openai",
