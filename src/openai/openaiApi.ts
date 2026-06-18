@@ -515,6 +515,9 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
                     text = maybeThinking;
                 }
                 if (text) {
+                    // Accumulate reasoning content for echo-back in tool call proxy rounds
+                    // DeepSeek thinking mode requires raw reasoning_content to be passed back verbatim
+                    this._capturedReasoningContent += text;
                     this.bufferThinkingContent(text, progress);
                     emitted = true;
                 }

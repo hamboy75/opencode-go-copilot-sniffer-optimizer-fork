@@ -813,9 +813,15 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     }
                 } else {
                     // OpenAI format: append assistant tool_call + tool result
+                    // Use the reasoning_content captured from the previous round's streaming response.
+                    // DeepSeek thinking mode requires the original reasoning_content to be echoed back
+                    // verbatim on every assistant message that follows a tool call — hardcoded strings
+                    // or empty values cause the model to break (infinite tool loops or 400 errors).
+                    const prevReasoning = (api as any)._capturedReasoningContent ?? "";
+                    (api as any)._capturedReasoningContent = "";
                     currentMessages.push({
                         role: "assistant" as const,
-                        reasoning_content: `Calling ${intercepted.name} tool (round ${round}) to get information about the user's attached image(s).`,
+                        reasoning_content: prevReasoning,
                         tool_calls: [
                             {
                                 id: intercepted.id,

@@ -78,6 +78,14 @@ export abstract class CommonApi<TMessage, TRequestBody> {
     public interceptedToolCall: InterceptedToolCall | null = null;
 
     /**
+     * Captures the reasoning_content from the streaming response so it can be
+     * echoed back in the next round's assistant message. DeepSeek thinking mode
+     * requires the original reasoning_content to be passed back verbatim.
+     * Reset to "" at the start of each streaming round.
+     */
+    public _capturedReasoningContent: string = "";
+
+    /**
      * Locally stored images collected during convertMessages.
      * Lives on the instance only — no global Map, automatically GC'd.
      */
