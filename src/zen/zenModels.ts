@@ -7,12 +7,9 @@ import { l10n } from "../localize";
 export const ZEN_FREE_MODEL_IDS: readonly string[] = [
     "big-pickle",
     "deepseek-v4-flash-free",
-    "minimax-m3-free",
     "minimax-m2.5-free",
-    "mimo-v2.5-free",
     "ring-2.6-1t-free",
     "nemotron-3-super-free",
-    "qwen3.6-plus-free",
 ];
 
 /**
@@ -24,7 +21,7 @@ export const ZEN_FREE_MODEL_IDS: readonly string[] = [
  */
 const ZEN_FREE_MODEL_METADATA: Record<
     string,
-    { displayName: string; contextLength: number; vision: boolean; maxTokens: number; thinkingMode: "switchable" | "always" | "adaptive"; supportedReasoningEfforts?: string[]; defaultReasoningEffort?: string; apiMode?: "openai" | "anthropic" }
+    { displayName: string; contextLength: number; vision: boolean; maxTokens: number; thinkingMode: "switchable" | "always"; supportedReasoningEfforts?: string[]; defaultReasoningEffort?: string }
 > = {
     "big-pickle": {
         displayName: "Zen/Big Pickle Free",
@@ -42,29 +39,27 @@ const ZEN_FREE_MODEL_METADATA: Record<
         supportedReasoningEfforts: ["high", "max"],
         defaultReasoningEffort: "max",
     },
-    "minimax-m3-free": {
-        displayName: "Zen/MiniMax M3 Free",
-        contextLength: 1000000,
-        vision: true,
+    "minimax-m2.5-free": {
+        displayName: "Zen/MiniMax M2.5 Free",
+        contextLength: 204800,
+        vision: false,
         maxTokens: 32768,
-        thinkingMode: "adaptive",
-        defaultReasoningEffort: "adaptive",
-        apiMode: "anthropic",
+        thinkingMode: "switchable",
     },
-    "mimo-v2.5-free": {
-        displayName: "Zen/MiMo V2.5 Free",
-        contextLength: 1000000,
-        vision: true,
-        maxTokens: 32768,
+    "ring-2.6-1t-free": {
+        displayName: "Zen/Ring 2.6 1T Free",
+        contextLength: 128000,
+        vision: false,
+        maxTokens: 4096,
         thinkingMode: "switchable",
     },
     "nemotron-3-super-free": {
         displayName: "Zen/Nemotron 3 Super Free",
-        contextLength: 1000000,
+        contextLength: 128000,
         vision: false,
         maxTokens: 4096,
         thinkingMode: "switchable",
-    }
+    },
 };
 
 const EXTENSION_LABEL_ZEN = "OpenCode Zen";
@@ -112,11 +107,6 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
         }
 
         // Build reasoning effort enum based on thinking mode
-        // - "switchable" + hasEfforts: disabled / [effort levels]
-        // - "switchable" + no efforts: disabled / enabled
-        // - "adaptive"               : disabled / adaptive
-        // - "always"    + hasEfforts: [effort levels]
-        // - "always"    + no efforts: enabled
         const hasEfforts = meta.supportedReasoningEfforts && meta.supportedReasoningEfforts.length > 0;
         let enumValues: string[];
         if (hasEfforts) {
@@ -128,8 +118,6 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
         } else {
             if (meta.thinkingMode === "switchable") {
                 enumValues = ["disabled", "enabled"];
-            } else if (meta.thinkingMode === "adaptive") {
-                enumValues = ["disabled", "adaptive"];
             } else {
                 enumValues = ["enabled"];
             }
@@ -137,7 +125,6 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
         const enumItemLabels = enumValues.map((e) => {
             switch (e) {
                 case 'disabled': return l10n("Disabled");
-                case 'adaptive': return l10n("Adaptive");
                 case 'enabled': return l10n("Thinking");
                 case 'high': return l10n("High");
                 case 'max': return l10n("Maximum");
@@ -147,7 +134,6 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
         const enumDescriptions = enumValues.map((e) => {
             switch (e) {
                 case 'disabled': return l10n("Do not enable thinking");
-                case 'adaptive': return l10n("Automatically decide when to think");
                 case 'enabled': return l10n("Enable thinking");
                 case 'high': return l10n("Deeper thinking, slower response");
                 case 'max': return l10n("Maximum thinking depth, slowest response");
@@ -169,7 +155,7 @@ function buildModelInfos(modelIds: string[]): LanguageModelChatInformation[] {
             capabilities: {
                 toolCalling: true,
                 // Always declare imageInput=true so VS Code passes image data through.
-                // Non-vision models handle images via the ask_image tool proxy internally.
+                // Non-vision models handle images via the describe_image tool proxy internally.
                 imageInput: true,
             },
             configurationSchema: {
@@ -210,7 +196,7 @@ export async function getZenFreeModelInfos(secrets: vscode.SecretStorage): Promi
     }
 
     // Try fetching from Zen API
-    const apiKey = await secrets.get("opencodego.apiKey");
+    const apiKey = await secrets.get("opencodegosniffer.apiKey");
 
     if (apiKey) {
         try {
@@ -262,7 +248,7 @@ export function getZenFreeModelConfig(modelId: string): OpenCodeGoModelItem | un
         vision: meta.vision,
         context_length: meta.contextLength,
         max_completion_tokens: meta.maxTokens,
-        apiMode: meta.apiMode ?? "openai",
+        apiMode: "openai",
         enable_thinking: true,
         include_reasoning_in_request: true,
         thinkingMode: meta.thinkingMode,

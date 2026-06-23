@@ -238,7 +238,7 @@ export abstract class CommonApi<TMessage, TRequestBody> {
             return parameters;
         }
         const config = vscode.workspace.getConfiguration();
-        const defaultLines = config.get<number>("opencodego.readFileLines", 0);
+        const defaultLines = config.get<number>("opencodegosniffer.readFileLines", 0);
         if (defaultLines <= 0) {
             return parameters;
         }

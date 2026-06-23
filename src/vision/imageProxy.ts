@@ -7,7 +7,7 @@ import type { StoredImage } from "./types";
  */
 function buildVisionOptions(): vscode.LanguageModelChatRequestOptions {
     const options: vscode.LanguageModelChatRequestOptions = {};
-    const visionThinking = vscode.workspace.getConfiguration().get<boolean>("opencodego.visionProxyThinking", false);
+    const visionThinking = vscode.workspace.getConfiguration().get<boolean>("opencodegosniffer.visionProxyThinking", false);
     if (visionThinking) {
         options.modelOptions = { reasoning_effort: "high" };
     } else {
@@ -34,7 +34,7 @@ async function sendToVisionModel(
 ): Promise<string> {
     const models = await vscode.lm.selectChatModels({ id: visionModelId });
     if (!models || models.length === 0) {
-        throw new Error(`Vision model "${visionModelId}" not found. Check the opencodego.visionProxyModel setting.`);
+        throw new Error(`Vision model "${visionModelId}" not found. Check the opencodegosniffer.visionProxyModel setting.`);
     }
     const visionModel = models[0];
     const response = await visionModel.sendRequest([msg], buildVisionOptions(), token);

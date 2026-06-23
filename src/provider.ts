@@ -31,6 +31,14 @@ import { ASK_IMAGE_TOOL_NAME, ASK_IMAGE_TOOL_DEF, ASK_WITH_MULTI_IMAGE_TOOL_NAME
 import type { InterceptedToolCall, StoredImage } from "./vision/types";
 import { logger } from "./logger";
 import { l10n } from "./localize";
+import { localStatsRecorder } from "./localStats/recorder";
+import {
+    defaultPruningRegexRules,
+    defaultPruningRemovePaths,
+    pruneRequestBody,
+    type RequestPruningMode,
+    type RequestPruningRegexRule,
+} from "./localStats/pruner";
 
 /**
  * Native Copilot Token Indicator
@@ -76,6 +84,61 @@ function getRequestedReasoningEffort(options: ProvideLanguageModelChatResponseOp
 
     const modelOptionsEffort = modelOptions?.reasoning_effort ?? modelOptions?.reasoningEffort;
     return typeof modelOptionsEffort === "string" ? modelOptionsEffort : undefined;
+}
+
+async function applyRequestPruning<T>(
+    requestBody: T,
+    statsRequestId: string | undefined
+): Promise<T> {
+    const config = vscode.workspace.getConfiguration();
+    const mode = config.get<RequestPruningMode>("opencodegosniffer.requestPruningMode", "off");
+    const removePaths = config.get<string[]>("opencodegosniffer.requestPruningRemovePaths", defaultPruningRemovePaths());
+    const regexRules = config.get<RequestPruningRegexRule[]>("opencodegosniffer.requestPruningRegexRules", defaultPruningRegexRules());
+
+    const result = pruneRequestBody(requestBody, {
+        mode,
+        removePaths,
+        regexRules,
+    });
+
+    const originalText = JSON.stringify(result.originalBody ?? {});
+    const prunedText = JSON.stringify(result.body ?? {});
+    const originalEstimatedTokens = await textTokenLength(originalText);
+    const sentEstimatedTokens = await textTokenLength(prunedText);
+
+    let prunedEstimatedTokens = sentEstimatedTokens;
+    if (mode === "preview") {
+        const previewResult = pruneRequestBody(requestBody, {
+            mode: "enabled",
+            removePaths,
+            regexRules,
+        });
+        prunedEstimatedTokens = await textTokenLength(JSON.stringify(previewResult.body ?? {}));
+    }
+
+    const savedEstimatedTokens = Math.max(0, originalEstimatedTokens - prunedEstimatedTokens);
+    const savedPercent = originalEstimatedTokens > 0
+        ? Math.round((savedEstimatedTokens / originalEstimatedTokens) * 1000) / 10
+        : 0;
+
+    localStatsRecorder.setPruningStats(statsRequestId, {
+        mode,
+        enabled: mode === "enabled",
+        originalEstimatedTokens,
+        prunedEstimatedTokens,
+        sentEstimatedTokens,
+        savedEstimatedTokens,
+        savedPercent,
+        originalBytes: result.originalBytes,
+        prunedBytes: result.prunedBytes,
+        savedBytes: result.savedBytes,
+        removedPaths: result.removedPaths,
+        modifiedStrings: result.modifiedStrings,
+        removePaths,
+        regexRules: regexRules.map((rule) => `${rule.path}:/${rule.pattern}/${rule.flags ?? "g"}`),
+    });
+
+    return result.body;
 }
 
 /**
@@ -143,12 +206,15 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
         token: CancellationToken
     ): Promise<void> {
         let usageReportedDuringStream = false;
+        let statsRequestId: string | undefined;
+        let estimatedOutputTokensForStats = 0;
         const collectedOutputText: string[] = [];
         const trackingProgress: Progress<LanguageModelResponsePart> = {
             report: (part) => {
                 try {
                     if (part instanceof vscode.LanguageModelTextPart) {
                         collectedOutputText.push(part.value);
+                        localStatsRecorder.recordChunk(statsRequestId, part.value);
                     }
                     progress.report(part);
                 } catch (e) {
@@ -201,19 +267,19 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             // Inject temperature & top_p from model preset or custom settings
             if (um) {
                 if (um.supportsTemperature !== false) {
-                    const tempPreset = config.get<string>("opencodego.modelPreset", "custom");
+                    const tempPreset = config.get<string>("opencodegosniffer.modelPreset", "custom");
                     if (tempPreset !== "custom") {
-                        const presets = config.get<ModelPreset[]>("opencodego.modelPresets", []);
+                        const presets = config.get<ModelPreset[]>("opencodegosniffer.modelPresets", []);
                         const matchedPreset = presets.find((p) => p.id === tempPreset);
                         if (matchedPreset) {
                             um.temperature = matchedPreset.temperature;
                         }
                     } else {
-                        const userTemperature = config.get<number | null>("opencodego.temperature", null);
+                        const userTemperature = config.get<number | null>("opencodegosniffer.temperature", null);
                         if (userTemperature !== null) {
                             um.temperature = userTemperature;
                         }
-                        const userTopP = config.get<number | null>("opencodego.top_p", null);
+                        const userTopP = config.get<number | null>("opencodegosniffer.top_p", null);
                         if (userTopP !== null) {
                             um.top_p = userTopP;
                         } else {
@@ -246,14 +312,14 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             };
 
             // Read Advanced Token indicator setting
-            const enableThirdPartyIndicator = config.get<boolean>("opencodego.enableThirdPartyTokenIndicator", true);
+            const enableThirdPartyIndicator = config.get<boolean>("opencodegosniffer.enableThirdPartyTokenIndicator", true);
 
             // Calculate client-side token estimate for fallback (also updates Advanced Token indicator if enabled)
             const estimatedInputTokens = await updateContextStatusBar(messages, options.tools, model, this.statusBarItem, modelConfig);
 
             // Apply delay between consecutive requests
             const modelDelay = um?.delay;
-            const globalDelay = config.get<number>("opencodego.delay", 0);
+            const globalDelay = config.get<number>("opencodegosniffer.delay", 0);
             const delayMs = modelDelay !== undefined ? modelDelay : globalDelay;
 
             if (delayMs > 0 && this._lastRequestTime !== null) {
@@ -287,7 +353,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             const retryConfig = createRetryConfig();
 
             // Create request timeout abort controller (default: 10 minutes)
-            requestTimeoutMs = config.get<number>("opencodego.requestTimeout", 600000);
+            requestTimeoutMs = config.get<number>("opencodegosniffer.requestTimeout", 600000);
             abortController = new AbortController();
             timeoutId = setTimeout(() => abortController.abort(), requestTimeoutMs);
             // Connect VS Code cancellation token to abort the fetch immediately when user stops
@@ -308,6 +374,16 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             });
             logger.debug("request.messages.origin", { messages });
 
+            // Start local stats recording
+            statsRequestId = localStatsRecorder.start({
+                modelId: model.id,
+                upstreamModelId: um?.displayName ?? model.name ?? model.id,
+                apiMode,
+                baseUrl: BASE_URL,
+                messageCount: messages.length,
+                capturePayloads: false,
+            });
+
             if (apiMode === "anthropic") {
                 // Anthropic API mode
                 const anthropicApi = new AnthropicApi(model.id);
@@ -321,6 +397,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                         updateCumulativeTooltip(this.statusBarItem);
                         updateStatusBarWithApiPrompt(usage.promptTokens, model.maxInputTokens || 128000, this.statusBarItem);
                     }
+                    localStatsRecorder.recordUsage(statsRequestId, usage, "api");
                 };
                 const anthropicMessages = anthropicApi.convertMessages(messages, modelConfig);
 
@@ -338,6 +415,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     ? `${normalizedBaseUrl}/messages`
                     : `${normalizedBaseUrl}/v1/messages`;
                 logger.debug("request.body", { url, requestBody });
+
+                requestBody = await applyRequestPruning(requestBody, statsRequestId);
+                localStatsRecorder.setRequestBody(statsRequestId, requestBody, url);
+
                 const response = await executeWithRetry(async () => {
                     const res = await dispatchFetch(url, {
                         method: "POST",
@@ -397,6 +478,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                         updateCumulativeTooltip(this.statusBarItem);
                         updateStatusBarWithApiPrompt(usage.promptTokens, model.maxInputTokens || 128000, this.statusBarItem);
                     }
+                    localStatsRecorder.recordUsage(statsRequestId, usage, "api");
                 };
                 const openaiMessages = openaiApi.convertMessages(messages, modelConfig);
 
@@ -413,6 +495,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 // Send chat request with retry
                 const url = `${BASE_URL.replace(/\/+$/, "")}/chat/completions`;
                 logger.debug("request.body", { url, requestBody });
+
+                requestBody = await applyRequestPruning(requestBody, statsRequestId);
+                localStatsRecorder.setRequestBody(statsRequestId, requestBody, url);
+
                 const response = await executeWithRetry(async () => {
                     const res = await dispatchFetch(url, {
                         method: "POST",
@@ -466,6 +552,7 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
             if (!usageReportedDuringStream) {
                 const outputText = collectedOutputText.join("");
                 const estimatedOutputTokens = outputText ? await textTokenLength(outputText) : 0;
+                estimatedOutputTokensForStats = estimatedOutputTokens;
                 const fallbackUsage: StreamUsage = {
                     promptTokens: estimatedInputTokens,
                     completionTokens: estimatedOutputTokens,
@@ -475,7 +562,13 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     recordUsage(fallbackUsage);
                     updateCumulativeTooltip(this.statusBarItem);
                 }
+                localStatsRecorder.recordUsage(statsRequestId, fallbackUsage, "estimated");
             }
+
+            localStatsRecorder.finish(statsRequestId, {
+                status: "ok",
+                estimatedOutputTokens: estimatedOutputTokensForStats || undefined,
+            });
         } catch (err) {
             // Determine if the request was aborted/terminated (friendly message instead of raw error)
             const errMessage = err instanceof Error ? err.message : String(err);
@@ -503,10 +596,15 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     durationMs: Date.now() - requestStartTime,
                     reason: isForceTerminated ? "connection_terminated" : "timeout",
                 });
+                localStatsRecorder.finish(statsRequestId, {
+                    status: "aborted",
+                    error: errMessage,
+                    estimatedOutputTokens: estimatedOutputTokensForStats || undefined,
+                });
                 if (isForceTerminated) {
                     throw new Error(l10n("The connection was closed by the server. The generation took too long. Please try again or request shorter content."));
                 }
-                throw new Error(l10n("Request timed out. The generation took too long. You can increase the timeout in settings (opencodego.requestTimeout)."));
+                throw new Error(l10n("Request timed out. The generation took too long. You can increase the timeout in settings (opencodegosniffer.requestTimeout)."));
             }
 
             // Detect Zen free model expiration: a 401 from a Zen free model
@@ -518,6 +616,11 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     error: "zen_free_model_expired",
                     errorMessage: errMessage,
                 });
+                localStatsRecorder.finish(statsRequestId, {
+                    status: "error",
+                    error: errMessage,
+                    estimatedOutputTokens: estimatedOutputTokensForStats || undefined,
+                });
                 throw new Error(l10nFormat("{0} is no longer available as a free model. Please use a different model.", zenModelName));
             }
 
@@ -527,6 +630,11 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     modelId: model.id,
                     error: "image_sensitive",
                     errorMessage: errMessage,
+                });
+                localStatsRecorder.finish(statsRequestId, {
+                    status: "error",
+                    error: errMessage,
+                    estimatedOutputTokens: estimatedOutputTokensForStats || undefined,
                 });
                 throw new Error(l10n("The image you sent was flagged as sensitive by the content moderation system. Please try a different image."));
             }
@@ -541,6 +649,11 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 messageCount: messages.length,
                 errorName: err instanceof Error ? err.name : String(err),
                 errorMessage: err instanceof Error ? err.message : String(err),
+            });
+            localStatsRecorder.finish(statsRequestId, {
+                status: "error",
+                error: errMessage,
+                estimatedOutputTokens: estimatedOutputTokensForStats || undefined,
             });
             throw err;
         } finally {
@@ -910,18 +1023,18 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
      * Ensure an API key exists in SecretStorage, optionally prompting the user when not silent.
      */
     private async ensureApiKey(): Promise<string | undefined> {
-        let apiKey = await this.secrets.get("opencodego.apiKey");
+        let apiKey = await this.secrets.get("opencodegosniffer.apiKey");
 
         if (!apiKey) {
             const entered = await vscode.window.showInputBox({
-                title: l10n("OpenCode Go Provider API Key"),
-                prompt: l10n("Enter your OpenCode Go API key"),
+                title: l10n("OpenCode GO Sniffer API Key"),
+                prompt: l10n("Enter your OpenCode GO API key"),
                 ignoreFocusOut: true,
                 password: true,
             });
             if (entered && entered.trim()) {
                 apiKey = entered.trim();
-                await this.secrets.store("opencodego.apiKey", apiKey);
+                await this.secrets.store("opencodegosniffer.apiKey", apiKey);
             }
         }
 

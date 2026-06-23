@@ -144,7 +144,7 @@ async function generateCommitMsgForRepository(secrets: vscode.SecretStorage, rep
 }
 
 async function ensureApiKey(secrets: vscode.SecretStorage): Promise<string | undefined> {
-    let apiKey = await secrets.get("opencodego.apiKey");
+    let apiKey = await secrets.get("opencodegosniffer.apiKey");
 
     if (!apiKey) {
         const entered = await vscode.window.showInputBox({
@@ -155,7 +155,7 @@ async function ensureApiKey(secrets: vscode.SecretStorage): Promise<string | und
         });
         if (entered && entered.trim()) {
             apiKey = entered.trim();
-            await secrets.store("opencodego.apiKey", apiKey);
+            await secrets.store("opencodegosniffer.apiKey", apiKey);
         }
     }
 
@@ -166,15 +166,15 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
     const startTime = Date.now();
     let modelId: string | undefined;
     try {
-        vscode.commands.executeCommand("setContext", "opencodego.isGeneratingCommit", true);
+        vscode.commands.executeCommand("setContext", "opencodegosniffer.isGeneratingCommit", true);
         const config = vscode.workspace.getConfiguration();
 
-        const customSystemPrompt = config.get<string>("opencodego.commitMessagePrompt", "");
+        const customSystemPrompt = config.get<string>("opencodegosniffer.commitMessagePrompt", "");
         let systemPrompt = customSystemPrompt || DEFAULT_PROMPT.system;
 
         // Fetch recent commits for style reference
-        const recentCommitsCount = config.get<number>("opencodego.recentCommitsCount", 10);
-        const includeCommitDiff = config.get<boolean>("opencodego.commitIncludeCommitDiff", false);
+        const recentCommitsCount = config.get<number>("opencodegosniffer.recentCommitsCount", 10);
+        const includeCommitDiff = config.get<boolean>("opencodegosniffer.commitIncludeCommitDiff", false);
         if (recentCommitsCount > 0 && repoPath) {
             const recentCommits = await getRecentCommits(repoPath, recentCommitsCount, { includeDiff: includeCommitDiff });
             if (recentCommits) {
@@ -188,7 +188,7 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
         const prompts: string[] = [];
 
         // Attach AGENTS.md and README.md context
-        const attachContextFiles = config.get<boolean>("opencodego.commitAttachContextFiles", true);
+        const attachContextFiles = config.get<boolean>("opencodegosniffer.commitAttachContextFiles", true);
         if (attachContextFiles && repoPath) {
             const contextFiles = ["AGENTS.md", "README.md"];
             for (const fileName of contextFiles) {
@@ -220,7 +220,7 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
         const prompt = prompts.join("\n\n");
 
         // Use model from config or default to deepseek-v4-flash
-        const commitModelId = config.get<string>("opencodego.commitModel", "deepseek-v4-flash");
+        const commitModelId = config.get<string>("opencodegosniffer.commitModel", "deepseek-v4-flash");
         // Fetch full model config (apiMode, max_completion_tokens, extra, etc.)
         const selectedModel: OpenCodeGoModelItem = getBuiltInModelConfig(commitModelId) ?? { id: commitModelId, owned_by: "opencode" };
         // Commit messages are simple tasks — disable thinking to speed up generation.
@@ -244,7 +244,7 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
         }
 
         // Apply language instruction: auto mode lets the model infer from style reference
-        const commitLanguage = config.get<string>("opencodego.commitLanguage", "auto");
+        const commitLanguage = config.get<string>("opencodegosniffer.commitLanguage", "auto");
         if (commitLanguage !== "auto") {
             systemPrompt += ` Generate commit message in ${commitLanguage}.`;
         }
@@ -283,7 +283,7 @@ async function performCommitMsgGeneration(secrets: vscode.SecretStorage, gitDiff
         logger.error("commit.error", { modelId: modelId ?? "unknown", error: errorMessage });
         vscode.window.showErrorMessage(`${l10n("Failed to generate commit message:")} ${errorMessage}`);
     } finally {
-        vscode.commands.executeCommand("setContext", "opencodego.isGeneratingCommit", false);
+        vscode.commands.executeCommand("setContext", "opencodegosniffer.isGeneratingCommit", false);
     }
 }
 

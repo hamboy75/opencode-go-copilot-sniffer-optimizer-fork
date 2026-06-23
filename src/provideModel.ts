@@ -9,7 +9,7 @@ const EXTENSION_LABEL = "OpenCodeGo";
 
 /**
  * Get the list of available language models contributed by this provider.
- * When the "opencodego.enableZenFreeModels" setting is enabled, OpenCode Zen
+ * When the "opencodegosniffer.enableZenFreeModels" setting is enabled, OpenCode Zen
  * free models are fetched and appended to the built-in model list.
  */
 export async function prepareLanguageModelChatInformation(
@@ -22,7 +22,7 @@ export async function prepareLanguageModelChatInformation(
 
     // Conditionally append Zen free models
     const config = vscode.workspace.getConfiguration();
-    const enableZen = config.get<boolean>("opencodego.enableZenFreeModels", false);
+    const enableZen = config.get<boolean>("opencodegosniffer.enableZenFreeModels", false);
     if (enableZen) {
         try {
             const zenInfos = await getZenFreeModelInfos(_secrets);
