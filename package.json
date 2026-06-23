@@ -18,11 +18,11 @@
 	],
 	"repository": {
 	"type": "git",
-	"url": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer"
+	"url": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer-fork"
 	},
-	"homepage": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer",
+	"homepage": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer-fork",
 	"bugs": {
-		"url": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer/issues"
+		"url": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer-fork/issues"
 	},
 	"version": "1.0.4",
 	"engines": {
