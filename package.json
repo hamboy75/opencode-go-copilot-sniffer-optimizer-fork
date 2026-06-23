@@ -24,7 +24,7 @@
 	"bugs": {
 		"url": "https://github.com/hamboy75/opencode-go-copilot-sniffer-optimizer/issues"
 	},
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"engines": {
 		"vscode": "^1.116.0"
 	},
