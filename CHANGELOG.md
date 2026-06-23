@@ -6,6 +6,27 @@
 ```markdown
 # Changelog
 
+## 1.0.4
+
+### Changed
+
+- **Now an official fork** of [OnesoftQwQ/opencode-go-copilot](https://github.com/OnesoftQwQ/opencode-go-copilot) (upstream v1.7.5). The project is now maintained as a fork with proper upstream tracking, making it easier to sync future improvements from the original provider.
+- Rebased onto upstream v1.7.5, bringing in all upstream improvements:
+  - New models: GLM-5.2, Kimi K2.7, MiniMax M3, Qwen3.7 Max, Qwen3.7 Plus
+  - Adaptive thinking mode for MiniMax M3
+  - `supportsTemperature` parameter for models that don't support temperature/top_p
+  - `ask_image` tool replacing `describe_image` for vision proxy
+  - Multi-image comparison via `ask_with_multi_image` tool
+  - Streaming vision model output in thinking blocks
+  - Image content moderation detection
+  - Data URI image extraction from text content
+  - Improved cancellation and timeout handling
+  - Various bug fixes and stability improvements
+- Renamed repository to `opencode-go-copilot-sniffer-optimizer-fork`
+- Added `FORK-MAINTENANCE.md` with change inventory and sync instructions
+- Added `build.sh` and `publish.sh` scripts adapted for the fork
+- Added `install-ext` command to `build.sh` for one-click VS Code installation
+
 ## 1.0.2
 
 ### Added
