@@ -2,46 +2,590 @@
 
 ![logo](/assets/logo.png)
 
-# OpenCode Go Provider for Copilot
+# OpenCode GO Copilot Sniffer & Optimizer
 
-[English](#english) | [中文](#中文)
+Integrate OpenCode GO and optional Zen free models into GitHub Copilot Chat, then inspect, monitor, debug and optimize the traffic sent upstream.
 
 </div>
 
-## English
-
 > [!IMPORTANT]
-> **This is not affiliated with, officially maintained by, or endorsed by OpenCode or Anomaly.**
+> **This project is not affiliated with, officially maintained by, or endorsed by OpenCode, Anomaly, GitHub or Microsoft.**
 
-Integrate [OpenCode Go](https://opencode.ai/go) and optional Zen free models into GitHub Copilot Chat as a VS Code extension.
+## Acknowledgements and origin
 
-### Usage
+This project exists thanks to the original work by **OnesoftQwQ**, author of the VS Code extension:
 
-1. **Set API Key**: `Ctrl+Shift+P` → `OpenCodeGo: Set OpenCode Go API Key`
-2. **Show Models**: Click the settings icon in the model picker → **Language Models** panel → set your desired models to Visible
-3. **Select Model**: In the Copilot Chat bottom model picker, choose an "OpenCode Go" or "OpenCode Zen" model
-4. **Start chatting**
+https://marketplace.visualstudio.com/items?itemName=OnesoftQwQ.opencode-go-copilot-provider
 
-### Advanced Token Usage Indicator
+**OpenCode GO Copilot Sniffer & Optimizer** started as a fork of that provider. The original project made it possible to connect OpenCode GO-compatible models to GitHub Copilot Chat.
 
-Once installed, the status bar shows the current context usage and cumulative input/output token counts for OpenCode Go models. DeepSeek models and models that return cache metrics via the OpenAI-compatible format also display the **cumulative cache hit count** and **cache hit rate** in the tooltip.
+This fork has since been extensively modified with a different focus: understanding the communication flow, inspecting what Copilot sends upstream, measuring token usage, exposing a local dashboard, and giving the user control over which parts of the request should be sent, removed, or optimized.
 
-You can control this indicator via the `opencodego.enableThirdPartyTokenIndicator` setting (default: `true`). When disabled, only the native Copilot token indicator remains visible.
+Credit and thanks go to **OnesoftQwQ** for the original foundation.
 
-> [!NOTE]
-> Whether non-DeepSeek models display cache data depends on whether the model API returns cache metrics in an OpenAI-compatible format. This does not indicate whether the model supports caching — caching support depends on OpenCode Go.
+## What is this?
 
-![token_counter](/assets/screenshots/token_counter.png)
+**OpenCode GO Copilot Sniffer & Optimizer** is a VS Code extension that embeds OpenCode GO-compatible models, including optional Zen free models, into GitHub Copilot Chat and adds a local inspection and optimization layer around the requests.
 
-### Git Commit Messages
+It started as an OpenCode GO Copilot provider, but this fork adds a full local dashboard to inspect what is being sent, measure token usage, monitor upstream responses, review payloads, estimate pruning savings and optionally reduce unnecessary request data before it reaches the OpenCode server.
 
-Click the **magic wand** button in the Source Control (SCM) panel to auto-generate a commit message.
+## Main features
 
-You can configure the model, language, number of recent commits to reference, and whether to attach context files.
+- OpenCode GO models inside GitHub Copilot Chat.
+- Optional OpenCode Zen free models.
+- Native Copilot token usage reporting.
+- Advanced VS Code status bar token counter.
+- Local Sniffer dashboard with token-protected access.
+- Request and response inspection.
+- Optional full payload capture.
+- Clickable JSON tree for request bodies.
+- Modal viewer for long fields with real line breaks.
+- Request pruning and optimization.
+- Preview mode for pruning savings before changing traffic.
+- Token and byte savings metrics.
+- Dedicated Usage tab.
+- Compact `OC 🔎` status bar usage indicator.
+- Command Palette setup for OpenCode usage credentials without opening the dashboard.
+- OpenCode current quota cards for rolling 5-hour, weekly and monthly usage.
+- Reset countdowns read from OpenCode usage data.
+- Current-month OpenCode usage detail loading through the `_server` endpoint.
+- Usage charts for daily cost and token usage.
+- Usage detail table by model, provider, date and session.
+- Local, forwarded and intranet dashboard URLs.
+- VS Code port forwarding support for Remote SSH dashboard access.
+- Dynamic port selection for multiple VS Code instances.
+- IP allowlist for intranet access.
+- Regenerable dashboard token.
+- Git commit message generation.
+- Model temperature presets.
+- Vision proxy for text-only models.
+- Configurable timeout for long-running streams.
 
-### Model Temperature Presets
+## Quick start
 
-Quickly switch temperature presets via `Ctrl+Shift+P` → `OpenCodeGo: Set Model Temperature Preset`.
+1. Install the VSIX in VS Code.
+2. Run `Ctrl+Shift+P` → `OpenCode GO Sniffer: Set OpenCode GO API Key`.
+3. Open Copilot Chat.
+4. Open the model picker.
+5. Make OpenCode GO models visible if they are hidden.
+6. Select an OpenCode GO model.
+7. Start chatting.
+
+If the model does not appear, run:
+
+```text
+Ctrl+Shift+P → Developer: Reload Window
+```
+
+## API key
+
+Set your API key from the command palette:
+
+```text
+OpenCode GO Sniffer: Set OpenCode GO API Key
+```
+
+The key is stored in VS Code SecretStorage.
+
+## Local Sniffer dashboard
+
+Open the local dashboard with:
+
+```text
+OpenCode GO Sniffer: Open Sniffer Dashboard
+```
+
+The dashboard is served by the extension itself. By default it listens on:
+
+```text
+127.0.0.1:43177
+```
+
+Every installation gets a random token stored in VS Code SecretStorage. Dashboard URLs include this token:
+
+```text
+http://127.0.0.1:43177/?token=...
+```
+
+The dashboard shows:
+
+- request count;
+- running, successful, failed and aborted requests;
+- average duration;
+- prompt tokens;
+- completion tokens;
+- pruning savings;
+- captured requests;
+- captured responses;
+- request details;
+- JSON tree inspection;
+- selected field modal;
+- dedicated Sniffer and Usage tabs;
+- OpenCode rolling 5-hour, weekly and monthly usage percentages;
+- current-month OpenCode usage detail loaded automatically from `_server`;
+- local usage charts.
+
+## Dashboard commands
+
+```text
+OpenCode GO Sniffer: Open Sniffer Dashboard
+OpenCode GO Sniffer: Open Usage Dashboard
+OpenCode GO Sniffer: Configure OpenCode Usage Credentials
+OpenCode GO Sniffer: Clear OpenCode Usage Credentials
+OpenCode GO Sniffer: Refresh OpenCode Usage Status
+OpenCode GO Sniffer: Restart Sniffer Server
+OpenCode GO Sniffer: Copy Local Sniffer URL
+OpenCode GO Sniffer: Copy Intranet Sniffer URL
+OpenCode GO Sniffer: Regenerate Sniffer Token
+```
+
+## Dynamic ports
+
+The configured port is treated as a base port. If the port is already in use, the extension can automatically try the next ports.
+
+Example:
+
+```json
+{
+  "opencodegosniffer.localStatsPort": 43177,
+  "opencodegosniffer.localStatsPortAutoIncrementMax": 20
+}
+```
+
+This allows several VS Code or Remote SSH instances to coexist:
+
+```text
+43177
+43178
+43179
+...
+43197
+```
+
+The copy URL commands always use the real active port.
+
+## VS Code port forwarding
+
+By default, dashboard opening commands use VS Code port forwarding when possible.
+
+This is especially useful in Remote SSH sessions because the dashboard can keep listening on:
+
+```text
+127.0.0.1:43177
+```
+
+and VS Code exposes it safely to your local browser through its forwarded-port mechanism.
+
+This means the normal recommended setup is:
+
+```json
+{
+  "opencodegosniffer.localStatsHost": "127.0.0.1",
+  "opencodegosniffer.localStatsUsePortForwarding": true
+}
+```
+
+With this setup you usually do **not** need:
+
+- `0.0.0.0`;
+- intranet allowlist changes;
+- direct access to the remote host LAN IP.
+
+If port forwarding cannot be used, the extension falls back to the configured dashboard URL.
+
+Disable this behavior with:
+
+```json
+{
+  "opencodegosniffer.localStatsUsePortForwarding": false
+}
+```
+
+## Intranet access
+
+By default the dashboard listens only on localhost.
+
+To expose it to your LAN:
+
+This is optional and mostly useful when you explicitly want direct LAN access instead of VS Code port forwarding.
+
+```json
+{
+  "opencodegosniffer.localStatsHost": "0.0.0.0",
+  "opencodegosniffer.localStatsAllowedClients": "127.0.0.1,::1,192.168.1.*"
+}
+```
+
+Supported allowlist formats:
+
+```text
+127.0.0.1
+192.168.1.5
+192.168.1.*
+192.168.1.0/24
+172.16.0.0/255.255.0.0
+*
+any
+```
+
+> [!WARNING]
+> Intranet access still requires the dashboard token, but captured payloads may contain code, prompts, file contents and sensitive data. Do not expose this dashboard outside trusted networks.
+
+## Payload capture
+
+Payload capture is disabled by default.
+
+Enable it only when debugging:
+
+```json
+{
+  "opencodegosniffer.localStatsCapturePayloads": true
+}
+```
+
+When enabled, the dashboard can show:
+
+- the body sent upstream;
+- response preview;
+- full captured response text;
+- model ID;
+- upstream model ID;
+- API mode;
+- base URL;
+- duration;
+- HTTP status;
+- usage metrics.
+
+Existing records created while payload capture was disabled will not retroactively contain request bodies.
+
+## JSON inspection
+
+The dashboard request view renders captured request bodies as a clickable JSON tree.
+
+You can click fields such as:
+
+```text
+requestBody.messages[0].content[0].text
+requestBody.system
+requestBody.tools
+summary.pruning
+```
+
+A modal opens with:
+
+- the selected path;
+- the selected value;
+- real line breaks;
+- copy button.
+
+There is also a persistent browser checkbox to show full strings in the tree instead of truncating long values.
+
+## Request pruning and optimization
+
+The extension can remove unnecessary data before sending requests upstream.
+
+Pruning modes:
+
+```json
+{
+  "opencodegosniffer.requestPruningMode": "off"
+}
+```
+
+Available modes:
+
+| Mode | Behavior |
+|------|----------|
+| `off` | Do not inspect or modify the request for pruning. |
+| `preview` | Estimate what would be saved, but send the original request. |
+| `enabled` | Apply pruning and send the reduced request. |
+
+### Remove complete nodes
+
+```json
+{
+  "opencodegosniffer.requestPruningRemovePaths": [
+    "system",
+    "tools",
+    "messages[].tool_calls"
+  ]
+}
+```
+
+Path syntax supports array wildcards with `[]`.
+
+### Regex rules for string fields
+
+```json
+{
+  "opencodegosniffer.requestPruningRegexRules": [
+    {
+      "path": "messages[].content[].text",
+      "pattern": "<environment_info>[\\s\\S]*?<\\/environment_info>",
+      "flags": "g",
+      "replacement": ""
+    },
+    {
+      "path": "messages[].content[].text",
+      "pattern": "<workspace_info>[\\s\\S]*?<\\/workspace_info>",
+      "flags": "g",
+      "replacement": ""
+    }
+  ]
+}
+```
+
+The dashboard shows:
+
+- original estimated tokens;
+- pruned estimated tokens;
+- sent estimated tokens;
+- saved estimated tokens;
+- saved percentage;
+- original bytes;
+- pruned bytes;
+- saved bytes;
+- removed paths;
+- modified strings.
+
+> [!TIP]
+> Start with `preview` mode. Once the saved content looks safe, switch to `enabled`.
+
+## OpenCode usage integration
+
+The dashboard includes a dedicated **Usage** tab for OpenCode workspace consumption.
+
+This tab is separated from the Sniffer tab because it answers a different question:
+
+- **Sniffer** shows what this extension is sending and receiving in real time.
+- **Usage** shows OpenCode account/workspace consumption as reported by OpenCode itself.
+
+The local Sniffer server performs these calls server-side to avoid browser CORS and cookie header limitations.
+
+### Current usage / quota
+
+OpenCode usage can be configured in two ways:
+
+- from the **Usage** tab in the local dashboard;
+- directly from VS Code without opening the dashboard.
+
+To configure it from VS Code:
+
+```text
+Ctrl+Shift+P → OpenCode GO Sniffer: Configure OpenCode Usage Credentials
+```
+
+The command asks for:
+
+1. OpenCode Usage URL;
+2. OpenCode auth cookie;
+3. optional `x-server-id` for detailed rows.
+
+The Usage URL is stored in VS Code globalState. The auth cookie and optional `x-server-id` are stored in VS Code SecretStorage.
+
+To clear these stored values:
+
+```text
+Ctrl+Shift+P → OpenCode GO Sniffer: Clear OpenCode Usage Credentials
+```
+
+This is useful when the dashboard cannot be opened easily, for example in restricted Remote SSH or intranet setups, but you still want the `OC 🔎` status bar to refresh quota data.
+
+The **Load current usage** button reads the OpenCode `/go` page for the selected workspace.
+
+This requires only:
+
+- workspace usage URL;
+- auth cookie.
+
+Example usage URL:
+
+```text
+https://opencode.ai/workspace/wrk_XXXXXXXXXXXXXXXXXXXXXXXXXX/usage
+```
+
+The workspace ID is extracted automatically from the URL when possible.
+
+The current usage view shows quota cards for:
+
+- rolling 5-hour usage;
+- weekly usage;
+- monthly usage.
+
+Each card shows:
+
+- usage percentage;
+- status;
+- remaining time until reset.
+
+The reset time is not guessed locally. It is read from OpenCode's own page data, using values such as `rollingUsage.resetInSec`, `weeklyUsage.resetInSec` and `monthlyUsage.resetInSec`.
+
+That means the dashboard follows the same reset windows OpenCode reports, including the rolling 5-hour window.
+
+### Usage detail / historical rows
+
+The **Load usage detail** button reads the OpenCode internal `_server` usage endpoint.
+
+This is used for detailed historical usage rows and requires:
+
+- workspace usage URL;
+- auth cookie;
+- `x-server-id`.
+
+The `x-server-id` is required only for detailed rows.
+
+You can find it from the OpenCode usage page:
+
+```text
+https://opencode.ai/workspace/wrk_XXXXXXXXXXXXXXXXXXXXXXXXXX/usage
+```
+
+Steps:
+
+1. Open the OpenCode usage page in your browser.
+2. Open browser DevTools.
+3. Go to the **Network** tab.
+4. On the OpenCode usage page, click the control that loads the next usage page.
+5. In DevTools, look for a request to:
+
+```text
+https://opencode.ai/_server
+```
+
+6. Select that request.
+7. Open its **Request Headers** section.
+8. Copy the value of:
+
+```text
+x-server-id
+```
+
+Paste that value into the dashboard field **x-server-id for detail**.
+
+This value is only needed for **Load usage detail**. It is not needed for **Load current usage**, because current quota cards are loaded from the OpenCode `/go` page.
+
+The dashboard starts from internal page `0` automatically and keeps loading detail pages until it reaches records older than the start of the current month, or until an internal safety limit is reached.
+
+The user does not need to know or configure OpenCode internal page numbers.
+
+The detail view shows:
+
+- rows loaded;
+- input tokens;
+- output tokens;
+- reasoning tokens;
+- cache read tokens;
+- input + cache tokens;
+- estimated cost;
+- usage table by model, provider, date and session.
+
+It also renders simple local charts for:
+
+- daily cost;
+- daily token usage.
+
+### Usage fields
+
+| Field | Required for current usage | Required for usage detail | Notes |
+|------|-----------------------------|----------------------------|-------|
+| Usage URL | Yes | Yes | Example: `https://opencode.ai/workspace/wrk_.../usage` |
+| Auth cookie | Yes | Yes | Accepts either `auth=...; oc_locale=es` or the raw auth value |
+| x-server-id | No | Yes | Required only for `_server` usage detail |
+
+### Privacy and storage
+
+> [!WARNING]
+> Your OpenCode auth cookie is sensitive. When configured in the dashboard, it is stored in browser `localStorage` for the web UI and also persisted to VS Code SecretStorage after usage is loaded. When configured from VS Code, it is stored directly in VS Code SecretStorage. Treat it as a secret. Clear it after debugging and rotate your session if it was exposed.
+
+The OpenCode usage integration is optional. It is intended for debugging, monitoring and understanding consumption while working with OpenCode GO models through Copilot Chat.
+
+## OpenCode usage status bar
+
+The extension can show an additional compact OpenCode usage status item in the VS Code status bar:
+
+```text
+OC 🔎 3% / 6% / 20%
+```
+
+The three values represent:
+
+```text
+Rolling 5h / Weekly / Monthly
+```
+
+The tooltip shows:
+
+```text
+OpenCode Usage
+Rolling 5h: 3%
+Weekly: 6%
+Monthly: 20%
+Click to open Usage tab
+```
+
+Clicking it opens the dashboard directly on the **Usage** tab. In Remote SSH sessions it uses VS Code port forwarding by default when available, and falls back to the configured dashboard URL if needed.
+
+The status refreshes automatically while VS Code is running.
+
+It also refreshes when opening the Usage dashboard or manually with:
+
+```text
+Ctrl+Shift+P → OpenCode GO Sniffer: Refresh OpenCode Usage Status
+```
+
+The first time it may show `-- / -- / --` until usage credentials have been configured either from VS Code or from the Usage tab.
+
+## Advanced token indicator
+
+The extension reports usage to Copilot's native token indicator and can also show an additional status bar counter.
+
+Disable the additional indicator with:
+
+```json
+{
+  "opencodegosniffer.enableThirdPartyTokenIndicator": false
+}
+```
+
+The status bar can show:
+
+- current context usage;
+- cumulative input tokens;
+- cumulative output tokens;
+- cache hit tokens when available;
+- cache hit rate when available.
+
+## Git commit message generation
+
+Use the magic wand button in the Source Control panel to generate a commit message.
+
+Configurable options:
+
+```json
+{
+  "opencodegosniffer.commitLanguage": "auto",
+  "opencodegosniffer.commitModel": "deepseek-v4-flash",
+  "opencodegosniffer.commitMessagePrompt": "",
+  "opencodegosniffer.recentCommitsCount": 10,
+  "opencodegosniffer.commitIncludeCommitDiff": false,
+  "opencodegosniffer.commitAttachContextFiles": true
+}
+```
+
+The extension can:
+
+- detect commit language from recent history;
+- use recent commits as style reference;
+- optionally include diffs from recent commits;
+- optionally attach `AGENTS.md` and `README.md` as context.
+
+## Temperature presets
+
+Open the preset picker:
+
+```text
+OpenCode GO Sniffer: Set Model Temperature Preset
+```
 
 Built-in presets:
 
@@ -52,162 +596,145 @@ Built-in presets:
 | Creative | 1.2 |
 | Extra Creative | 1.7 |
 
-You can also configure `opencodego.temperature` and `opencodego.top_p` directly in `settings.json` (requires `opencodego.modelPreset` set to `"custom"`).
-
-### Extended Vision Understanding
-
-This extension adds **extended vision understanding** capability to **text-only models** that do not natively support vision. When you send a message with an image to these models, they can call a vision-capable model to describe the image, and then answer based on that description.
-
-You can configure the default vision model and whether to enable thinking when describing images. By default, Qwen3.6-Plus is used to describe images.
-
-### OpenCode Zen Free Models
-
-Disabled by default. Enable via the `opencodego.enableZenFreeModels` setting. When enabled, free models fetched from the Zen API are added to the model picker with a `Zen/` prefix (e.g. `Zen/DeepSeek V4 Flash Free`). Requires a full reload of VS Code to take effect after changing the setting.
-
-### Configuration
-
-Available in `settings.json`:
+Manual configuration:
 
 ```json
 {
-  "opencodego.commitLanguage": "auto",
-  "opencodego.commitModel": "deepseek-v4-flash",
-  "opencodego.commitMessagePrompt": "",
-  "opencodego.requestTimeout": 600000,
-  "opencodego.recentCommitsCount": 10,
-  "opencodego.commitIncludeCommitDiff": false,
-  "opencodego.commitAttachContextFiles": true
+  "opencodegosniffer.modelPreset": "custom",
+  "opencodegosniffer.temperature": 0.7,
+  "opencodegosniffer.top_p": 0.95
 }
 ```
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `opencodego.commitLanguage` | `auto` | Language for Git commit messages. When set to `auto`, the language is detected from recent commit history (defaults to English if no history exists). |
-| `opencodego.commitModel` | `deepseek-v4-flash` | Model ID used for commit message generation. |
-| `opencodego.commitMessagePrompt` | `""` | Custom system prompt for commit message generation. |
-| `opencodego.requestTimeout` | `600000` | Maximum time (ms) for a single API request. Default is 600000 (10 minutes). Increase if long responses time out. |
-| `opencodego.recentCommitsCount` | `10` | Number of recent commits to analyze for style reference when generating commit messages. Set to 0 to disable. |
-| `opencodego.commitIncludeCommitDiff` | `false` | Include the actual code changes (diff) of recent commits in the style reference, helping the model generate messages that better match the project's commit style. |
-| `opencodego.enableZenFreeModels` | `false` | Enable OpenCode Zen free models in the model picker. Zen free models are NOT supported for git commit message generation. Requires a full reload to take effect. |
-| `opencodego.commitAttachContextFiles` | `true` | Attach the content of AGENTS.md and README.md from the repository root as additional context for commit message generation, helping the model better understand the project. |
-| `opencodego.visionProxyModel` | `qwen3.6-plus` | Vision model used by the `ask_image` tool when the selected model does not support vision. |
+## Vision proxy
 
-| `opencodego.visionProxyThinking` | `false` | Enable thinking/reasoning in the vision proxy model when answering image queries. |
+Text-only models can use a vision-capable model to describe images through the `describe_image` tool.
+
+Settings:
+
+```json
+{
+  "opencodegosniffer.visionProxyModel": "qwen3.6-plus",
+  "opencodegosniffer.visionProxyPrompt": "",
+  "opencodegosniffer.visionProxyThinking": false
+}
+```
+
+This lets a text-only model receive an image description and answer based on it.
 
 > [!NOTE]
-> Models with switchable thinking (e.g., DeepSeek, Qwen) provide reasoning effort levels such as `Disabled`/`High`/`Maximum`.
+> Vision proxy behavior is experimental and depends on the selected upstream models.
 
-### Build
+## OpenCode Zen free models
+
+Zen free models are disabled by default.
+
+Enable them with:
+
+```json
+{
+  "opencodegosniffer.enableZenFreeModels": true
+}
+```
+
+After changing this setting, reload VS Code.
+
+Zen models appear in the model picker with a `Zen/` prefix.
+
+## Main settings
+
+```json
+{
+  "opencodegosniffer.commitLanguage": "auto",
+  "opencodegosniffer.commitModel": "deepseek-v4-flash",
+  "opencodegosniffer.commitMessagePrompt": "",
+  "opencodegosniffer.requestTimeout": 600000,
+  "opencodegosniffer.recentCommitsCount": 10,
+  "opencodegosniffer.commitIncludeCommitDiff": false,
+  "opencodegosniffer.commitAttachContextFiles": true,
+
+  "opencodegosniffer.enableThirdPartyTokenIndicator": true,
+  "opencodegosniffer.enableZenFreeModels": false,
+
+  "opencodegosniffer.modelPreset": "custom",
+  "opencodegosniffer.temperature": null,
+  "opencodegosniffer.top_p": null,
+
+  "opencodegosniffer.visionProxyModel": "qwen3.6-plus",
+  "opencodegosniffer.visionProxyPrompt": "",
+  "opencodegosniffer.visionProxyThinking": false,
+
+  "opencodegosniffer.localStatsEnabled": true,
+  "opencodegosniffer.localStatsPort": 43177,
+  "opencodegosniffer.localStatsPortAutoIncrementMax": 20,
+  "opencodegosniffer.localStatsHost": "127.0.0.1",
+  "opencodegosniffer.localStatsUsePortForwarding": true,
+  "opencodegosniffer.localStatsAllowedClients": "127.0.0.1,::1",
+  "opencodegosniffer.localStatsCapturePayloads": false,
+  "opencodegosniffer.localStatsMaxEntries": 200,
+
+  "opencodegosniffer.requestPruningMode": "off",
+  "opencodegosniffer.requestPruningRemovePaths": [],
+  "opencodegosniffer.requestPruningRegexRules": []
+}
+```
+
+## Security notes
+
+This extension can inspect and optionally store sensitive data locally.
+
+Be careful with:
+
+- API keys;
+- auth cookies;
+- prompts;
+- source code;
+- diffs;
+- tool outputs;
+- workspace context;
+- model responses;
+- intranet dashboard access.
+
+Recommendations:
+
+- keep payload capture disabled unless debugging;
+- use `127.0.0.1` unless you need intranet access;
+- keep VS Code port forwarding enabled for Remote SSH unless you specifically need direct LAN access;
+- use a restrictive IP allowlist;
+- regenerate the dashboard token if shared accidentally;
+- clear OpenCode usage credentials after testing and rotate the OpenCode session if the cookie was exposed;
+- use pruning preview mode before enabling pruning.
+
+## Build
 
 ```bash
 npm install
 npm run compile
-npm run build      # packages extension.vsix
+npm run build
 ```
 
-### License
+The build creates:
 
-MIT License. This project references code from [oai-compatible-copilot](https://github.com/JohnnyZ93/oai-compatible-copilot).
-
----
-
-## 中文
-
-> [!IMPORTANT]
-> **本插件与 OpenCode 或 Anomaly 无关，也未获得其官方维护或认可。**
-
-将 [OpenCode Go](https://opencode.ai/go) 以及可选的 Zen 免费模型集成到 GitHub Copilot Chat 的 VS Code 插件。
-
-### 使用
-
-1. **设置 API Key**：`Ctrl+Shift+P` → `OpenCodeGo: Set OpenCode Go API Key`
-2. **显示模型**：在模型选择器中点击设置图标 → **语言模型** 面板 → 将需要使用的模型显示
-3. **选择模型**：在 Copilot Chat 底部模型选择器中选择 "OpenCode Go" 或 "OpenCode Zen" 下的模型
-4. **开始对话**
-
-### 高级 Token 用量指示器
-
-安装后，使用 OpenCode Go 提供的模型时，状态栏会显示当前上下文用量与累计输入/输出 Token 量。DeepSeek 和通过 OpenAI 格式返回缓存用量的模型还会显示**累计缓存命中量**与**缓存命中率**。
-
-可通过 `opencodego.enableThirdPartyTokenIndicator` 设置（默认 `true`）控制此高级 Token 指示器。关闭后仅显示 Copilot 原生 Token 指示器。
-
-> [!NOTE]
-> 非 DeepSeek 的模型是否显示缓存数据取决于模型接口是否通过 OpenAI 格式返回缓存数据，这并不代表此模型是否支持缓存。模型对于缓存的支持情况取决于 OpenCode Go。
-
-![token_counter](/assets/screenshots/token_counter.png)
-
-### Git 提交消息
-
-在源代码管理（SCM）面板中点击魔法棒按钮，自动生成 Git 提交消息。
-
-可在配置里配置使用的模型、语言、参考的最近提交数量以及是否附加上下文文件。
-
-### 扩展视觉理解
-
-本插件为**不支持视觉理解**的**纯文本模型**添加了**扩展视觉理解**功能，当你向这些模型发送带有图片的信息时，他们可以调用支持视觉理解的模型为图片输出描述，然后再回答。
-
-通过配置文件可更改默认使用的模型以及是否在描述图片时启用思考。默认情况下，将使用 Qwen3.6-Plus 描述图片。
-
-### 启用 OpenCode Zen 免费模型
-
-该功能默认关闭，通过 `opencodego.enableZenFreeModels` 设置启用。开启后，将从 Zen API 获取免费模型并添加到模型选择器中，名称带 `Zen/` 前缀（如 `Zen/DeepSeek V4 Flash Free`）。更改设置后需要重新加载 VS Code 才能生效。
-
-### 调整模型温度
-
-通过 `Ctrl+Shift+P` → `OpenCodeGo: Set Model Temperature Preset` 快速切换温度预设。
-
-内置 4 个预设档位：
-
-| 档位 | 温度 |
-|------|------|
-| 精确 | 0.0 |
-| 均衡 | 1.0 |
-| 创意 | 1.2 |
-| 极具创意 | 1.7 |
-
-也可在 `settings.json` 中直接配置 `opencodego.temperature` 和 `opencodego.top_p`（需将 `opencodego.modelPreset` 设为 `"custom"`）。
-
-### 配置
-
-可在 `settings.json` 中配置：
-
-```json
-{
-  "opencodego.commitLanguage": "auto",
-  "opencodego.commitModel": "deepseek-v4-flash",
-  "opencodego.commitMessagePrompt": "",
-  "opencodego.requestTimeout": 600000,
-  "opencodego.recentCommitsCount": 10,
-  "opencodego.commitIncludeCommitDiff": false,
-  "opencodego.commitAttachContextFiles": true
-}
+```text
+extension.vsix
 ```
 
-| 配置项 | 默认值 | 说明 |
-|--------|--------|------|
-| `opencodego.commitLanguage` | `auto` | 提交消息语言。设为 `auto` 时将根据历史提交自动检测语言（无历史时默认英语）。 |
-| `opencodego.commitModel` | `deepseek-v4-flash` | 用于生成提交消息的模型。 |
-| `opencodego.commitMessagePrompt` | `""` | 生成提交消息的自定义系统提示词。 |
-| `opencodego.requestTimeout` | `600000` | 单个 API 请求的最大等待时间（毫秒）。默认 600000（10 分钟）。生成长内容超时时可增大此值。 |
-| `opencodego.recentCommitsCount` | `10` | 生成提交消息时参考的近期提交数量，用于学习仓库提交风格。设为 0 可禁用。 |
-| `opencodego.commitIncludeCommitDiff` | `false` | 在风格参考中包含历史提交的实际代码变更（diff），帮助模型生成更符合项目提交风格的消息。 |
-| `opencodego.enableZenFreeModels` | `false` | 启用 OpenCode Zen 免费模型并添加到模型选择器中。暂不支持用于 Git 提交消息生成。更改后需重载 VS Code 生效。 |
-| `opencodego.commitAttachContextFiles` | `true` | 将仓库根目录的 AGENTS.md 和 README.md 作为额外上下文附加到提交消息生成中，帮助模型更好地理解项目。 |
-| `opencodego.visionProxyModel` | `qwen3.6-plus` | 用于 ask_image 工具的视觉模型 ID。当所选模型不支持视觉时，该模型用于回答图片相关问题。 |
-
-| `opencodego.visionProxyThinking` | `false` | 在视觉代理模型回答图片查询时启用思考/推理功能。 |
-
-> [!NOTE]
-> 支持切换思考模式的模型（如 DeepSeek、Qwen）提供`禁用思考`/`高`/`极高`等推理强度选项。
-
-### 编译
+## Install local VSIX
 
 ```bash
-npm install
-npm run compile
-npm run build      # 打包为 extension.vsix
+code --install-extension extension.vsix --force
 ```
 
-### 许可
+When using Remote SSH, make sure the extension is installed on the remote side if that is where Copilot/provider code is running.
 
-MIT License。本项目参考了 [oai-compatible-copilot](https://github.com/JohnnyZ93/oai-compatible-copilot) 的代码。
+## Development notes
+
+The extension ID and internal settings namespace may still use `opencodegosniffer` for compatibility with previous builds.
+
+A future major version may migrate the namespace to a new one.
+
+## License
+
+MIT License.
+
+This project references and evolves ideas from OpenCode-compatible Copilot provider work, including `oai-compatible-copilot`.
