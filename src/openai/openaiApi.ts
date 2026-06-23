@@ -361,6 +361,9 @@ export class OpenaiApi extends CommonApi<OpenAIChatMessage, Record<string, unkno
         const modelId = this._modelId;
         logger.debug("openai.stream.start", { modelId });
 
+        // Reset mutable state to prevent carryover from previous rounds
+        this._resetStreamState();
+
         const reader = responseBody.getReader();
         const decoder = new TextDecoder();
         let buffer = "";

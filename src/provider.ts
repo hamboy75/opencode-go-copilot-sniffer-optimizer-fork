@@ -788,6 +788,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                 if (anthropicToolList.length > 0) {
                     body.tools = anthropicToolList;
                 }
+                // Allow the model to freely call ask_image again in this round
+                if (hasLocalImages) {
+                    body.tool_choice = { type: "auto" };
+                }
 
                 const normalizedUrl = params.baseUrl.replace(/\/+$/, "");
                     const url = normalizedUrl.endsWith("/v1")
@@ -856,13 +860,13 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     if (params.um?.max_completion_tokens !== undefined) {
                         body.max_completion_tokens = params.um.max_completion_tokens;
                     }
-                    if (params.um?.enable_thinking !== false && params.um?.reasoning_effort !== undefined) {
+                    if (params.um?.enable_thinking !== false && params.um?.reasoning_effort !== undefined && params.um.reasoning_effort !== 'adaptive') {
                         body.reasoning_effort = params.um.reasoning_effort;
                     }
                     if (params.um?.enable_thinking === true) {
                         body.thinking = { type: "enabled" };
                     } else {
-                        body.thinking = { type: false };
+                        body.thinking = { type: "disabled" };
                     }
 
                     // Inject tools (VS Code + ask_image + ask_with_multi_image)
@@ -879,6 +883,10 @@ export class OpenCodeGoChatModelProvider implements LanguageModelChatProvider {
                     }
                     if (openaiToolList.length > 0) {
                         body.tools = openaiToolList;
+                    }
+                    // Allow the model to freely call ask_image again in this round
+                    if (hasLocalImages) {
+                        body.tool_choice = "auto";
                     }
 
                     const url = `${params.baseUrl.replace(/\/+$/, "")}/chat/completions`;

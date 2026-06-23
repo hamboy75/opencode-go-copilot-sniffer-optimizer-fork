@@ -357,6 +357,9 @@ export class AnthropicApi extends CommonApi<AnthropicMessage, AnthropicRequestBo
 		const modelId = this._modelId;
 		logger.debug("anthropic.stream.start", { modelId });
 
+		// Reset mutable state to prevent carryover from previous rounds
+		this._resetStreamState();
+
 		const reader = responseBody.getReader();
 		const decoder = new TextDecoder();
 		let buffer = "";

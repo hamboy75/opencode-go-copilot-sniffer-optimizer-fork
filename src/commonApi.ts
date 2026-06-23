@@ -252,6 +252,31 @@ export abstract class CommonApi<TMessage, TRequestBody> {
     }
 
     /**
+     * Reset mutable streaming state. Must be called at the start of each
+     * processStreamingResponse invocation to prevent state carryover between
+     * rounds (e.g., first round → vision proxy → second round).
+     * Optional fields like _onUsage and _capturedReasoningContent are left as-is
+     * because they are intentionally managed across rounds.
+     */
+    protected _resetStreamState(): void {
+        this._toolCallBuffers.clear();
+        this._completedToolCallIndices.clear();
+        this._hasEmittedAssistantText = false;
+        this._hasEmittedText = false;
+        this._hasEmittedThinking = false;
+        this._emittedBeginToolCallsHint = false;
+        this._xmlThinkActive = false;
+        this._xmlThinkDetectionAttempted = false;
+        this._currentThinkingId = null;
+        this._thinkingBuffer = "";
+        if (this._thinkingFlushTimer) {
+            clearTimeout(this._thinkingFlushTimer);
+            this._thinkingFlushTimer = null;
+        }
+        this.interceptedToolCall = null;
+    }
+
+    /**
      * Report to VS Code for ending thinking
      * @param progress Progress reporter for parts
      */

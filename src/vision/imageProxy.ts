@@ -13,7 +13,7 @@ function buildVisionOptions(): vscode.LanguageModelChatRequestOptions {
     } else {
         options.modelOptions = {
             reasoning_effort: "disabled",
-            thinking: { type: false },
+            thinking: { type: "disabled" },
         };
     }
     return options;

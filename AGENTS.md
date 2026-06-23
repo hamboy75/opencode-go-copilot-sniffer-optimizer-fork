@@ -412,7 +412,7 @@ src/
 | `provider.ts` | ~700 | 实现 `LanguageModelChatProvider`，处理聊天请求全流程及图片代理多轮循环处理 |
 | `models.ts` | ~230 | 17 个内置模型定义，模型配置查询（所有模型声明 `imageInput: true`） |
 | `types.ts` | ~95 | `OpenCodeGoModelItem`, `ModelPreset`, `ModelsResponse`, `RetryConfig` 等类型 |
-| `commonApi.ts` | ~458 | `CommonApi<TMessage,TRequestBody>` 抽象基类（图片存储、工具调用拦截） |
+| `commonApi.ts` | ~462 | `CommonApi<TMessage,TRequestBody>` 抽象基类（图片存储、工具调用拦截） |
 | `provideModel.ts` | ~25 | 模型信息获取 |
 | `provideToken.ts` | ~100 | Token 用量计算 |
 | `utils.ts` | ~285 | 工具函数 (重试、角色映射、工具转换等) |
@@ -480,6 +480,9 @@ src/
 - 每轮创建独立 AbortController，带独立超时。
 - 每轮注入 VS Code 原生工具 + ask_image + ask_with_multi_image，确保模型可以混合使用。
 - Anthropic 模式额外恢复 `system` 内容（`_systemContent`）和 `thinking` 参数。
+- 第二轮及后续轮次请求体中显式设置 `tool_choice` 为 `"auto"`（OpenAI）或 `{ type: "auto" }`（Anthropic），确保模型可继续调用工具。
+- 使用 `_resetStreamState()` 重置流状态，避免 `_completedToolCallIndices` 等状态在轮次间残留导致工具调用被跳过。
+- `thinking` 字段值统一使用字符串（`"enabled"` / `"disabled"`），与 `prepareRequestBody` 保持一致。
 
 #### `private async ensureApiKey(): Promise<string | undefined>`
 确保 API Key 存在于 SecretStorage 中，缺失时弹出输入框提示用户输入。
@@ -618,6 +621,9 @@ API 实现的抽象基类。
 
 #### `protected adjustReadFileParameters(toolName, parameters): Record<string, unknown>`
 调整 `read_file` 工具的参数，根据配置自动扩增读取行数。
+
+#### `protected _resetStreamState(): void`
+重置可变流状态。必须在每次 `processStreamingResponse` 调用开始时调用，防止状态在轮次间残留（例如第一轮 → 视觉代理 → 第二轮）。清理内容包括：工具调用缓冲区、已发射索引、文本/推理发射标记、XML think 解析状态、thinking 缓冲区与定时器、被拦截工具调用。
 
 #### `protected reportEndThinking(progress): void`
 结束当前推理序列，向 VS Code 报告推理结束。
