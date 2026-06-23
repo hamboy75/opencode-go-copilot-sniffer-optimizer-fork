@@ -6,6 +6,12 @@
 ```markdown
 # Changelog
 
+## 1.0.5
+
+### Changed
+
+- Updated repository URLs in `package.json` to point to the new fork location: `github.com/hamboy75/opencode-go-copilot-sniffer-optimizer-fork`
+
 ## 1.0.4
 
 ### Changed
